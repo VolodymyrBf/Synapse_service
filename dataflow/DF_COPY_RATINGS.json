@@ -1,0 +1,55 @@
+{
+	"name": "DF_COPY_RATINGS",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_ADLS_PARQUET_FILE",
+						"type": "DatasetReference"
+					},
+					"name": "fBronzeTitleRatingsParquet",
+					"description": "Import data from bronze/imdb/title.ratings.parquet"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_ADLS_PARQUET_DIR",
+						"type": "DatasetReference"
+					},
+					"name": "fSilverTitleRatingsParquet",
+					"description": "Export data to silver/imdb/title_ratings/"
+				}
+			],
+			"transformations": [],
+			"scriptLines": [
+				"source(output(",
+				"          tconst as string,",
+				"          averageRating as decimal(10,0),",
+				"          numVotes as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet') ~> fBronzeTitleRatingsParquet",
+				"fBronzeTitleRatingsParquet sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     filePattern:'title_ratings-[n].parquet',",
+				"     umask: 0777,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     mapColumn(",
+				"          title_id = tconst,",
+				"          average_rating = averageRating,",
+				"          num_votes = numVotes",
+				"     ),",
+				"     partitionBy('roundRobin', 10)) ~> fSilverTitleRatingsParquet"
+			]
+		}
+	}
+}

@@ -1,0 +1,57 @@
+{
+	"name": "DF_COPY_TITLE_EPISODE",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_ADLS_PARQUET_FILE",
+						"type": "DatasetReference"
+					},
+					"name": "fBronzeTitleEpisodeParquet",
+					"description": "Import data from bronze/imdb/title.episode.parquet"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_ADLS_PARQUET_DIR",
+						"type": "DatasetReference"
+					},
+					"name": "fSilverTitleEpisodeParquet",
+					"description": "Export data to silver/imdb/episode_belongs_to/"
+				}
+			],
+			"transformations": [],
+			"scriptLines": [
+				"source(output(",
+				"          tconst as string,",
+				"          parentTconst as string,",
+				"          seasonNumber as integer,",
+				"          episodeNumber as integer",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet') ~> fBronzeTitleEpisodeParquet",
+				"fBronzeTitleEpisodeParquet sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     filePattern:'episode_belongs_to-[n].parquet',",
+				"     umask: 0777,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     mapColumn(",
+				"          title_id = tconst,",
+				"          parent_tv_show_title_id = parentTconst,",
+				"          season_number = seasonNumber,",
+				"          episode_number = episodeNumber",
+				"     ),",
+				"     partitionBy('roundRobin', 10)) ~> fSilverTitleEpisodeParquet"
+			]
+		}
+	}
+}

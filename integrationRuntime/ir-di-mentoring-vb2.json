@@ -1,0 +1,7 @@
+{
+	"name": "ir-di-mentoring-vb2",
+	"properties": {
+		"type": "SelfHosted",
+		"description": "MSQL self-hosted integration runtime"
+	}
+}

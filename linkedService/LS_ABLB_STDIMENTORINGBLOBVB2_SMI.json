@@ -1,0 +1,17 @@
+{
+	"name": "LS_ABLB_STDIMENTORINGBLOBVB2_SMI",
+	"type": "Microsoft.Synapse/workspaces/linkedservices",
+	"properties": {
+		"description": "Linked service to Azure blob storage stdimentoringblobvb2",
+		"annotations": [],
+		"type": "AzureBlobStorage",
+		"typeProperties": {
+			"serviceEndpoint": "https://stdimentoringblobvb2.blob.core.windows.net/",
+			"accountKind": "StorageV2"
+		},
+		"connectVia": {
+			"referenceName": "AutoResolveIntegrationRuntime",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

@@ -1,0 +1,390 @@
+{
+	"name": "PL_MSQL_ADLS_delta_v2",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup_last_watermark",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "Set vCurrExtractTime",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureTableSource",
+						"azureTableSourceIgnoreTableNotFound": false
+					},
+					"dataset": {
+						"referenceName": "DS_ATBL_YouFlixWatermark",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEachTable",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Lookup_last_watermark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Lookup_last_watermark').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Update_last_watermark_entity",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "Copy_MSQL_to_ADLS",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureTableSource",
+									"additionalColumns": [
+										{
+											"name": "update_col",
+											"value": {
+												"value": "@variables('vCurrExtractTime')",
+												"type": "Expression"
+											}
+										}
+									],
+									"azureTableSourceQuery": {
+										"value": "@concat('PartitionKey eq ''',item().PartitionKey,''' and ','RowKey eq ''',item().PartitionKey,'''')",
+										"type": "Expression"
+									},
+									"azureTableSourceIgnoreTableNotFound": false
+								},
+								"sink": {
+									"type": "AzureTableSink",
+									"azureTableInsertType": "merge",
+									"azureTablePartitionKeyName": {
+										"value": "PartitionKey",
+										"type": "Expression"
+									},
+									"azureTableRowKeyName": {
+										"value": "RowKey",
+										"type": "Expression"
+									},
+									"writeBatchSize": 10000
+								},
+								"enableStaging": false,
+								"dataIntegrationUnits": 2,
+								"translator": {
+									"type": "TabularTranslator",
+									"mappings": [
+										{
+											"source": {
+												"name": "PartitionKey",
+												"type": "String"
+											},
+											"sink": {
+												"name": "PartitionKey",
+												"type": "String"
+											}
+										},
+										{
+											"source": {
+												"name": "RowKey",
+												"type": "String"
+											},
+											"sink": {
+												"name": "RowKey",
+												"type": "String"
+											}
+										},
+										{
+											"source": {
+												"name": "Timestamp",
+												"type": "DateTimeOffset"
+											},
+											"sink": {
+												"name": "Timestamp",
+												"type": "DateTimeOffset"
+											}
+										},
+										{
+											"source": {
+												"name": "update_col",
+												"type": "String"
+											},
+											"sink": {
+												"name": "watermark",
+												"type": "DateTimeOffset"
+											}
+										},
+										{
+											"source": {
+												"name": "watermark_column",
+												"type": "String"
+											},
+											"sink": {
+												"name": "watermark_column",
+												"type": "String"
+											}
+										}
+									],
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_ATBL_YouFlixWatermark",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_ATBL_YouFlixWatermark",
+									"type": "DatasetReference"
+								}
+							]
+						},
+						{
+							"name": "Copy_MSQL_to_ADLS",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "SqlServerSource",
+									"sqlReaderQuery": {
+										"value": "@concat('SELECT * FROM ',concat(pipeline().parameters.pSrcSchema,'.',item().PartitionKey),' WHERE cast(',item().watermark_column,' as datetimeoffset) >= ''',item().watermark,''' AND cast(',item().watermark_column,' as datetimeoffset) < ''',variables('vCurrExtractTime'),'''')",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"dataIntegrationUnits": 2,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_SQL_YouFlix",
+									"type": "DatasetReference",
+									"parameters": {
+										"pTblName": {
+											"value": "@item().PartitionKey",
+											"type": "Expression"
+										},
+										"pSchemaName": {
+											"value": "@pipeline().parameters.pSrcSchema",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_ADLS_CSV",
+									"type": "DatasetReference",
+									"parameters": {
+										"pContainer": {
+											"value": "@pipeline().parameters.pContainer",
+											"type": "Expression"
+										},
+										"pDirectory": {
+											"value": "@pipeline().parameters.pDirectory",
+											"type": "Expression"
+										},
+										"pFileName": {
+											"value": "@replace(replace(concat(pipeline().parameters.pSrcSchema,'_',item().PartitionKey,'/',pipeline().parameters.pSrcSchema,'_',item().PartitionKey,'_',formatDateTime(variables('vCurrExtractTime'),'yyyyMMddhhmmss'),'.csv'), '[', ''), ']', '')",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "Set vCurrExtractTime",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "vCurrExtractTime",
+					"value": {
+						"value": "@utcnow()",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Generate_flag_file",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "ForEachTable",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlServerSource",
+						"sqlReaderQuery": {
+							"value": "SELECT 'Success' as RESULT;",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false,
+					"dataIntegrationUnits": 2,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_SQL_YouFlix",
+						"type": "DatasetReference",
+						"parameters": {
+							"pTblName": {
+								"value": "@pipeline().parameters.pSrcSchema",
+								"type": "Expression"
+							},
+							"pSchemaName": "watermark"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_ADLS_CSV",
+						"type": "DatasetReference",
+						"parameters": {
+							"pContainer": {
+								"value": "@pipeline().parameters.pContainer",
+								"type": "Expression"
+							},
+							"pDirectory": {
+								"value": "@pipeline().parameters.pDirectory",
+								"type": "Expression"
+							},
+							"pFileName": {
+								"value": "@concat('Success.csv')",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"pSrcSchema": {
+				"type": "string",
+				"defaultValue": "[youflix]"
+			},
+			"pContainer": {
+				"type": "string",
+				"defaultValue": "data"
+			},
+			"pDirectory": {
+				"type": "string",
+				"defaultValue": "bronze/youflix"
+			}
+		},
+		"variables": {
+			"vCurrExtractTime": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-08-12T10:48:19Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}

@@ -1,0 +1,59 @@
+{
+	"name": "PL_DATA_IMDB",
+	"properties": {
+		"activities": [
+			{
+				"name": "ACT_GEN_EPIPE_PL_DATA_ABLB_to_ADLS_TSV_to_PARQUET",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_DATA_ABLB_to_ADLS_TSV_to_PARQUET",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"pSrcContainer": "imdb",
+						"pTgtContainer": "data",
+						"pTgtDirectory": "bronze/imdb"
+					}
+				}
+			},
+			{
+				"name": "ACT_GEN_EPIPE_PL_ADLS_bronze_DF_sIlver",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "ACT_GEN_EPIPE_PL_DATA_ABLB_to_ADLS_TSV_to_PARQUET",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_ADLS_bronze_DF_sIlver",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"pDLakeContainer": "data",
+						"pRatingsBronzeDirectory": "bronze/imdb",
+						"pRatingsBronzeFile": "title.ratings.parquet",
+						"pRatingsSilverDirectory": "silver/imdb/title_ratings",
+						"pEpisodeBronzeFile": "title.episode.parquet",
+						"pEpisodeSilverDirectory": "silver/imdb/episode_belongs_to",
+						"pTitleBasicsFile": "title.basics.parquet",
+						"pTitlesSilverDirectory": "silver/imdb/titles",
+						"pTitleGenresSilverDirectory": "silver/imdb/title_genres"
+					}
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2023-08-11T14:10:47Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}

@@ -1,0 +1,42 @@
+{
+	"name": "DS_ADLS_PARQUET_FILE",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"pContainer": {
+				"type": "String"
+			},
+			"pDirectory": {
+				"type": "String"
+			},
+			"pFile": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().pFile",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().pDirectory",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@dataset().pContainer",
+					"type": "Expression"
+				}
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": []
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

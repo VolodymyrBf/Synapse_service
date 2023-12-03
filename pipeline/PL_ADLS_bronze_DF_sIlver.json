@@ -1,0 +1,222 @@
+{
+	"name": "PL_ADLS_bronze_DF_sIlver",
+	"properties": {
+		"activities": [
+			{
+				"name": "DF_COPY_RATINGS",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "DF_COPY_RATINGS",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"fBronzeTitleRatingsParquet": {
+								"pContainer": {
+									"value": "@pipeline().parameters.pDLakeContainer",
+									"type": "Expression"
+								},
+								"pDirectory": {
+									"value": "@pipeline().parameters.pRatingsBronzeDirectory",
+									"type": "Expression"
+								},
+								"pFile": {
+									"value": "@pipeline().parameters.pRatingsBronzeFile",
+									"type": "Expression"
+								}
+							},
+							"fSilverTitleRatingsParquet": {
+								"pContainer": {
+									"value": "@pipeline().parameters.pDLakeContainer",
+									"type": "Expression"
+								},
+								"pDirectory": {
+									"value": "@pipeline().parameters.pRatingsSilverDirectory",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "DF_COPY_TITLE_EPISODE",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "DF_COPY_RATINGS",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "DF_COPY_TITLE_EPISODE",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"fBronzeTitleEpisodeParquet": {
+								"pContainer": {
+									"value": "@pipeline().parameters.pDLakeContainer",
+									"type": "Expression"
+								},
+								"pDirectory": {
+									"value": "@pipeline().parameters.pRatingsBronzeDirectory",
+									"type": "Expression"
+								},
+								"pFile": {
+									"value": "@pipeline().parameters.pEpisodeBronzeFile",
+									"type": "Expression"
+								}
+							},
+							"fSilverTitleEpisodeParquet": {
+								"pContainer": {
+									"value": "@pipeline().parameters.pDLakeContainer",
+									"type": "Expression"
+								},
+								"pDirectory": {
+									"value": "@pipeline().parameters.pEpisodeSilverDirectory",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "DF_COPY_TITLE_BASICS",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "DF_COPY_TITLE_EPISODE",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "DF_COPY_TITLE_BASICS",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"fBronzeTitleBasicsParquet": {
+								"pContainer": {
+									"value": "@pipeline().parameters.pDLakeContainer",
+									"type": "Expression"
+								},
+								"pDirectory": {
+									"value": "@pipeline().parameters.pRatingsBronzeDirectory",
+									"type": "Expression"
+								},
+								"pFile": {
+									"value": "@pipeline().parameters.pTitleBasicsFile",
+									"type": "Expression"
+								}
+							},
+							"fSilverTitlesParquet": {
+								"pContainer": {
+									"value": "@pipeline().parameters.pDLakeContainer",
+									"type": "Expression"
+								},
+								"pDirectory": {
+									"value": "@pipeline().parameters.pTitlesSilverDirectory",
+									"type": "Expression"
+								}
+							},
+							"fSilverTitleGenresParquet": {
+								"pContainer": {
+									"value": "@pipeline().parameters.pDLakeContainer",
+									"type": "Expression"
+								},
+								"pDirectory": {
+									"value": "@pipeline().parameters.pTitleGenresSilverDirectory",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"parameters": {
+			"pDLakeContainer": {
+				"type": "string",
+				"defaultValue": "data"
+			},
+			"pRatingsBronzeDirectory": {
+				"type": "string",
+				"defaultValue": "bronze/imdb"
+			},
+			"pRatingsBronzeFile": {
+				"type": "string",
+				"defaultValue": "title.ratings.parquet"
+			},
+			"pRatingsSilverDirectory": {
+				"type": "string",
+				"defaultValue": "silver/imdb/title_ratings"
+			},
+			"pEpisodeBronzeFile": {
+				"type": "string",
+				"defaultValue": "title.episode.parquet"
+			},
+			"pEpisodeSilverDirectory": {
+				"type": "string",
+				"defaultValue": "silver/imdb/episode_belongs_to"
+			},
+			"pTitleBasicsFile": {
+				"type": "string",
+				"defaultValue": "title.basics.parquet"
+			},
+			"pTitlesSilverDirectory": {
+				"type": "string",
+				"defaultValue": "silver/imdb/titles"
+			},
+			"pTitleGenresSilverDirectory": {
+				"type": "string",
+				"defaultValue": "silver/imdb/title_genres"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-08-11T14:10:44Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}

@@ -1,0 +1,23 @@
+{
+	"name": "LS_ATBL_YouFlixWatermark_SAS",
+	"type": "Microsoft.Synapse/workspaces/linkedservices",
+	"properties": {
+		"description": "Linked service to YouFlixWatermark table",
+		"annotations": [],
+		"type": "AzureTableStorage",
+		"typeProperties": {
+			"sasUri": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_KV_DI_MENTORING_VB2",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "scrt-stdimentoringdatalakevb-YouFlixWatermark-tbl"
+			}
+		},
+		"connectVia": {
+			"referenceName": "AutoResolveIntegrationRuntime",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

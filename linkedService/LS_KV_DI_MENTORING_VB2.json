@@ -1,0 +1,12 @@
+{
+	"name": "LS_KV_DI_MENTORING_VB2",
+	"type": "Microsoft.Synapse/workspaces/linkedservices",
+	"properties": {
+		"description": "Linked service to kv-di-mentoring-vb",
+		"annotations": [],
+		"type": "AzureKeyVault",
+		"typeProperties": {
+			"baseUrl": "https://kv-di-mentoring-vb2.vault.azure.net/"
+		}
+	}
+}

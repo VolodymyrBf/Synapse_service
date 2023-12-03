@@ -1,0 +1,19 @@
+{
+	"name": "ADBR_DI_MENTORING_VB2",
+	"type": "Microsoft.Synapse/workspaces/linkedservices",
+	"properties": {
+		"description": "Azure Databricks linked service",
+		"annotations": [],
+		"type": "AzureDatabricks",
+		"typeProperties": {
+			"domain": "https://adb-1568907857943605.5.azuredatabricks.net/",
+			"authentication": "MSI",
+			"workspaceResourceId": "/subscriptions/e71eb201-ee2e-47da-ab86-41042b9f04c2/resourceGroups/rg-di-mentoring-vb2/providers/Microsoft.Databricks/workspaces/dbs-di-mentoring-vb2",
+			"existingClusterId": "0812-105440-dln5r2rg"
+		},
+		"connectVia": {
+			"referenceName": "AutoResolveIntegrationRuntime",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

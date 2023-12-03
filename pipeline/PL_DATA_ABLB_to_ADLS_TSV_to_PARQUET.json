@@ -1,0 +1,97 @@
+{
+	"name": "PL_DATA_ABLB_to_ADLS_TSV_to_PARQUET",
+	"properties": {
+		"activities": [
+			{
+				"name": "ACT_MT_Copy_TSV_to_PARQUET",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": false,
+							"wildcardFileName": "*.tsv.gz",
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_ABLB_TSV_GZ",
+						"type": "DatasetReference",
+						"parameters": {
+							"pContainer": {
+								"value": "@pipeline().parameters.pSrcContainer",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_ADLS_PARQUET_DIR",
+						"type": "DatasetReference",
+						"parameters": {
+							"pContainer": {
+								"value": "@pipeline().parameters.pTgtContainer",
+								"type": "Expression"
+							},
+							"pDirectory": {
+								"value": "@pipeline().parameters.pTgtDirectory",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"pSrcContainer": {
+				"type": "String",
+				"defaultValue": "imdb"
+			},
+			"pTgtContainer": {
+				"type": "String",
+				"defaultValue": "imdb"
+			},
+			"pTgtDirectory": {
+				"type": "String",
+				"defaultValue": "bronze"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-08-11T14:10:41Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}

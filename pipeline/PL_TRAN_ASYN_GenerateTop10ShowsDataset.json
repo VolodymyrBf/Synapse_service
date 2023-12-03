@@ -1,0 +1,30 @@
+{
+	"name": "PL_TRAN_ASYN_GenerateTop10ShowsDataset",
+	"properties": {
+		"activities": [
+			{
+				"name": "ACT_GEN_SPRC_usp_GenerateTop10ShowsDataset",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[usp_GenerateTop10ShowsDataset]"
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_ASYN_WSP_VB2",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2023-08-20T06:17:13Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}

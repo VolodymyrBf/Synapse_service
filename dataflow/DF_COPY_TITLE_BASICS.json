@@ -1,0 +1,114 @@
+{
+	"name": "DF_COPY_TITLE_BASICS",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_ADLS_PARQUET_FILE",
+						"type": "DatasetReference"
+					},
+					"name": "fBronzeTitleBasicsParquet",
+					"description": "Import data from bronze/imdb/title.basics.parquet"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_ADLS_PARQUET_DIR",
+						"type": "DatasetReference"
+					},
+					"name": "fSilverTitlesParquet",
+					"description": "Export data to silver/imdb/titles"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_ADLS_PARQUET_DIR",
+						"type": "DatasetReference"
+					},
+					"name": "fSilverTitleGenresParquet",
+					"description": "Export data to silver/imdb/title_genres"
+				}
+			],
+			"transformations": [
+				{
+					"name": "SelectTitlesColumns",
+					"description": "Select columns necessary for titles dataset"
+				},
+				{
+					"name": "FlattenGenres",
+					"description": "Unroll 'genres' array into individual rows"
+				},
+				{
+					"name": "AddGenresListColumn",
+					"description": "Adding 'genres_list' column as splitted 'genres' column (comma-separated)"
+				},
+				{
+					"name": "RankTitleGenre",
+					"description": "Calculate a rank value for each genre within a movie"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          tconst as string,",
+				"          titleType as string,",
+				"          primaryTitle as string,",
+				"          originalTitle as string,",
+				"          isAdult as boolean,",
+				"          startYear as integer,",
+				"          endYear as integer,",
+				"          runtimeMinutes as integer,",
+				"          genres as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet') ~> fBronzeTitleBasicsParquet",
+				"fBronzeTitleBasicsParquet select(mapColumn(",
+				"          title_id = tconst,",
+				"          title_type = titleType,",
+				"          primary_title = primaryTitle,",
+				"          original_title = originalTitle,",
+				"          is_adult = isAdult,",
+				"          start_year = startYear,",
+				"          end_year = endYear,",
+				"          runtime_minutes = runtimeMinutes",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> SelectTitlesColumns",
+				"AddGenresListColumn foldDown(unroll(genres_list, genres_list),",
+				"     mapColumn(",
+				"          title_id = tconst,",
+				"          genre = genres_list",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> FlattenGenres",
+				"fBronzeTitleBasicsParquet derive(genres_list = split(genres, ',')) ~> AddGenresListColumn",
+				"FlattenGenres window(over(title_id),",
+				"     asc(genre, true),",
+				"     rank = rowNumber()) ~> RankTitleGenre",
+				"SelectTitlesColumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     filePattern:'titles-[n].parquet',",
+				"     umask: 0777,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('roundRobin', 10)) ~> fSilverTitlesParquet",
+				"RankTitleGenre sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     filePattern:'title_genres-[n].parquet',",
+				"     umask: 0777,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('roundRobin', 10)) ~> fSilverTitleGenresParquet"
+			]
+		}
+	}
+}

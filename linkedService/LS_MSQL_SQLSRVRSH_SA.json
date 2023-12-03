@@ -1,0 +1,23 @@
+{
+	"name": "LS_MSQL_SQLSRVRSH_SA",
+	"type": "Microsoft.Synapse/workspaces/linkedservices",
+	"properties": {
+		"description": "Linked service to SQL Server, YouflixDB database (on-prem)",
+		"annotations": [],
+		"type": "SqlServer",
+		"typeProperties": {
+			"connectionString": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_KV_DI_MENTORING_VB2",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "con-msql-youflixdb-sh"
+			}
+		},
+		"connectVia": {
+			"referenceName": "ir-di-mentoring-vb2",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

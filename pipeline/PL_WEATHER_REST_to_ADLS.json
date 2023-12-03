@@ -1,0 +1,134 @@
+{
+	"name": "PL_WEATHER_REST_to_ADLS",
+	"properties": {
+		"description": "Pipeline copies data from \"https://archive-api.open-meteo.com/v1/archive\" to ADLS blob",
+		"activities": [
+			{
+				"name": "GetWeatherData",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "Set vFileName",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "@concat(pipeline().parameters.pWeather_GET_URL_header, '&start_date=', pipeline().parameters.pStartDate, '&end_date=', pipeline().parameters.pEndDate, pipeline().parameters.pWeather_GET_URL_footer)",
+						"type": "Expression"
+					},
+					"connectVia": {
+						"referenceName": "AutoResolveIntegrationRuntime",
+						"type": "IntegrationRuntimeReference"
+					},
+					"method": "GET"
+				}
+			},
+			{
+				"name": "PutWeatherDataIntoBlob",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "GetWeatherData",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "@replace(pipeline().parameters.pBlob_PUT_URL, '%folder_file%', concat(pipeline().parameters.pWeatherFolder, variables('vFileName')))",
+						"type": "Expression"
+					},
+					"connectVia": {
+						"referenceName": "AutoResolveIntegrationRuntime",
+						"type": "IntegrationRuntimeReference"
+					},
+					"method": "PUT",
+					"headers": {
+						"x-ms-blob-type": "BlockBlob"
+					},
+					"body": {
+						"value": "@activity('GetWeatherData').output.Response",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Set vFileName",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "vFileName",
+					"value": {
+						"value": "@concat('weather_data_',replace(pipeline().parameters.pStartDate, '-', ''), '_', replace(pipeline().parameters.pEndDate, '-', ''), '.json')",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"pWeather_GET_URL_header": {
+				"type": "string",
+				"defaultValue": "https://archive-api.open-meteo.com/v1/archive?latitude=40.4133,40.6148,40.861,40.72510235,40.554722,40.5984&longitude=-74.1007,-73.8418,-73.845,-73.97958331,-74.18,-74.07264121"
+			},
+			"pBlob_PUT_URL": {
+				"type": "string",
+				"defaultValue": "https://stdimentoringdatalakevb2.blob.core.windows.net/%folder_file%?sv=2022-11-02&ss=bf&srt=co&sp=rwdlacy&se=2023-12-01T17:54:38Z&st=2023-10-29T09:54:38Z&spr=https&sig=UpS%2FHCmXRnBjDIUKhiNXph3KYZuJK8ikgp4dfqwMXUk%3D"
+			},
+			"pStartDate": {
+				"type": "string",
+				"defaultValue": "2023-02-01"
+			},
+			"pEndDate": {
+				"type": "string",
+				"defaultValue": "2023-02-28"
+			},
+			"pWeather_GET_URL_footer": {
+				"type": "string",
+				"defaultValue": "&hourly=temperature_2m,relativehumidity_2m,rain,snowfall,weathercode,cloudcover&timezone=America%2FNew_York"
+			},
+			"pWeatherFolder": {
+				"type": "string",
+				"defaultValue": "taxi-data/bronze/weather_data/"
+			}
+		},
+		"variables": {
+			"vSplit_test": {
+				"type": "String"
+			},
+			"vFileName": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "TAXI_TRIP"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-11-24T16:44:30Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}

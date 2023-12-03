@@ -1,0 +1,32 @@
+{
+	"name": "DS_ABLB_TSV_GZ",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ABLB_STDIMENTORINGBLOBVB2_SMI",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"pContainer": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"container": {
+					"value": "@dataset().pContainer",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": "\t",
+			"compressionCodec": "gzip",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": ""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

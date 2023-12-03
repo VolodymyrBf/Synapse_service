@@ -1,0 +1,16 @@
+{
+	"name": "DS_ATBL_YouFlixWatermark",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_ATBL_YouFlixWatermark_SAS",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureTable",
+		"schema": [],
+		"typeProperties": {
+			"tableName": "YouFlixWatermark"
+		}
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

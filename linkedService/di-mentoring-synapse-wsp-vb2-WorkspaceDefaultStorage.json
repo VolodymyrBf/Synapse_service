@@ -1,0 +1,15 @@
+{
+	"name": "di-mentoring-synapse-wsp-vb2-WorkspaceDefaultStorage",
+	"type": "Microsoft.Synapse/workspaces/linkedservices",
+	"properties": {
+		"typeProperties": {
+			"url": "https://stdimentoringdatalakevb2.dfs.core.windows.net"
+		},
+		"type": "AzureBlobFS",
+		"connectVia": {
+			"referenceName": "AutoResolveIntegrationRuntime",
+			"type": "IntegrationRuntimeReference"
+		},
+		"annotations": []
+	}
+}

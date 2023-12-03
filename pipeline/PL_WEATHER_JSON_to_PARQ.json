@@ -1,0 +1,146 @@
+{
+	"name": "PL_WEATHER_JSON_to_PARQ",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy JSON to Parquet",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"path": "$['latitude']"
+								},
+								"sink": {
+									"name": "latitude",
+									"type": "Double"
+								}
+							},
+							{
+								"source": {
+									"path": "$['longitude']"
+								},
+								"sink": {
+									"name": "longitude",
+									"type": "Double"
+								}
+							},
+							{
+								"source": {
+									"path": "$['generationtime_ms']"
+								},
+								"sink": {
+									"name": "generationtime_ms"
+								}
+							}
+						],
+						"collectionReference": "",
+						"mapComplexValuesToString": false
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_ADLS_JSON",
+						"type": "DatasetReference",
+						"parameters": {
+							"pContainer": {
+								"value": "@pipeline().parameters.pSrcContainer",
+								"type": "Expression"
+							},
+							"pDirectory": {
+								"value": "@pipeline().parameters.pSrcDirectory",
+								"type": "Expression"
+							},
+							"pFile": {
+								"value": "@pipeline().parameters.pSrcFile",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_ADLS_PARQUET_FILE",
+						"type": "DatasetReference",
+						"parameters": {
+							"pContainer": {
+								"value": "@pipeline().parameters.pTgtContainer",
+								"type": "Expression"
+							},
+							"pDirectory": {
+								"value": "@pipeline().parameters.pTgtDirectory",
+								"type": "Expression"
+							},
+							"pFile": {
+								"value": "@replace(pipeline().parameters.pSrcFile, '.json', concat('_', formatDateTime(utcnow(),'yyyyMMddhhmmss'), '.parquet'))",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"pTgtContainer": {
+				"type": "string",
+				"defaultValue": "taxi-data"
+			},
+			"pTgtDirectory": {
+				"type": "string",
+				"defaultValue": "silver/weather_data"
+			},
+			"pSrcContainer": {
+				"type": "string",
+				"defaultValue": "taxi-data"
+			},
+			"pSrcDirectory": {
+				"type": "string",
+				"defaultValue": "bronze/weather_data"
+			},
+			"pSrcFile": {
+				"type": "string",
+				"defaultValue": "weather_data_20230101_20230131.json"
+			}
+		},
+		"variables": {
+			"vFileName": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-11-24T16:44:40Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}

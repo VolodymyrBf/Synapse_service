@@ -1,0 +1,25 @@
+{
+	"name": "TPCH_DB",
+	"properties": {
+		"Name": "TPCH_DB",
+		"EntityType": "DATABASE",
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"Properties": {
+			"IsSyMSCDMDatabase": true
+		},
+		"Source": {
+			"Provider": "ADLS",
+			"Location": "abfss://dlt@stdimentoringdatalakevb2.dfs.core.windows.net/",
+			"Properties": {
+				"FormatType": "csv",
+				"LinkedServiceName": "di-mentoring-synapse-wsp-vb2-WorkspaceDefaultStorage"
+			}
+		},
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 1,
+		"ObjectId": "a8e533c9-4b26-45c6-a624-89e3fea5dd4a"
+	},
+	"type": "DATABASE"
+}

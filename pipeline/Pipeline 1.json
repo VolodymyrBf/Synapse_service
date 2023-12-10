@@ -1,0 +1,177 @@
+{
+	"name": "Pipeline 1",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy MSQL in partitions",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlServerSource",
+						"sqlReaderQuery": {
+							"value": "@concat('select * from ', pipeline().parameters.pSrcSchema, '.', pipeline().parameters.pSrcTable, ' WHERE ?AdfDynamicRangePartitionCondition')",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "DynamicRange",
+						"partitionSettings": {
+							"partitionColumnName": {
+								"value": "@{pipeline().parameters.pSrcPartColumn}",
+								"type": "Expression"
+							},
+							"partitionUpperBound": "",
+							"partitionLowerBound": ""
+						}
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".csv"
+						}
+					},
+					"enableStaging": false,
+					"parallelCopies": 4,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "user_subscription_device_id",
+									"type": "Int64",
+									"physicalType": "bigint"
+								},
+								"sink": {
+									"name": "user_subscription_device_id",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "user_id",
+									"type": "Int64",
+									"physicalType": "bigint"
+								},
+								"sink": {
+									"name": "user_id",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "subscription_id",
+									"type": "Int64",
+									"physicalType": "bigint"
+								},
+								"sink": {
+									"name": "subscription_id",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "device_id",
+									"type": "Int64",
+									"physicalType": "bigint"
+								},
+								"sink": {
+									"name": "device_id",
+									"type": "String",
+									"physicalType": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "created_timestamp",
+									"type": "DateTime",
+									"physicalType": "datetime"
+								},
+								"sink": {
+									"name": "created_timestamp",
+									"type": "String",
+									"physicalType": "String"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_SQL_YouFlix",
+						"type": "DatasetReference",
+						"parameters": {
+							"pTblName": {
+								"value": "@pipeline().parameters.pSrcTable",
+								"type": "Expression"
+							},
+							"pSchemaName": {
+								"value": "@pipeline().parameters.pSrcSchema",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_ADLS_CSV_FOLDER",
+						"type": "DatasetReference",
+						"parameters": {
+							"pContainer": {
+								"value": "@pipeline().parameters.pTgtContainer",
+								"type": "Expression"
+							},
+							"pDirectory": {
+								"value": "@pipeline().parameters.pTgtDirectory",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"pSrcSchema": {
+				"type": "string",
+				"defaultValue": "youflix"
+			},
+			"pSrcPartColumn": {
+				"type": "string",
+				"defaultValue": "user_subscription_device_id"
+			},
+			"pSrcTable": {
+				"type": "string",
+				"defaultValue": "user_subscription_device"
+			},
+			"pTgtDirectory": {
+				"type": "string",
+				"defaultValue": "part_test/2nd_atmpt"
+			},
+			"pTgtContainer": {
+				"type": "string",
+				"defaultValue": "syn-fs"
+			}
+		},
+		"annotations": []
+	}
+}

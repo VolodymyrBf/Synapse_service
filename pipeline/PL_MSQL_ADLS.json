@@ -1,9 +1,9 @@
 {
-	"name": "PL_MSQL_ADLS_PARALLEL",
+	"name": "PL_MSQL_ADLS",
 	"properties": {
 		"activities": [
 			{
-				"name": "Copy MSQL in partitions",
+				"name": "Copy MSQL",
 				"type": "Copy",
 				"dependsOn": [],
 				"policy": {
@@ -18,19 +18,11 @@
 					"source": {
 						"type": "SqlServerSource",
 						"sqlReaderQuery": {
-							"value": "@concat('select * from ', pipeline().parameters.pSrcSchema, '.', pipeline().parameters.pSrcTable, ' WHERE ?AdfDynamicRangePartitionCondition')",
+							"value": "@concat('select * from ', pipeline().parameters.pSrcSchema, '.', pipeline().parameters.pSrcTable)",
 							"type": "Expression"
 						},
 						"queryTimeout": "02:00:00",
-						"partitionOption": "DynamicRange",
-						"partitionSettings": {
-							"partitionColumnName": {
-								"value": "@{pipeline().parameters.pSrcPartColumn}",
-								"type": "Expression"
-							},
-							"partitionUpperBound": "",
-							"partitionLowerBound": ""
-						}
+						"partitionOption": "None"
 					},
 					"sink": {
 						"type": "DelimitedTextSink",
@@ -40,11 +32,11 @@
 						"formatSettings": {
 							"type": "DelimitedTextWriteSettings",
 							"quoteAllText": true,
-							"fileExtension": ".csv"
+							"fileExtension": ".txt"
 						}
 					},
 					"enableStaging": false,
-					"parallelCopies": 4,
+					"parallelCopies": 1,
 					"translator": {
 						"type": "TabularTranslator",
 						"mappings": [
@@ -134,7 +126,7 @@
 				],
 				"outputs": [
 					{
-						"referenceName": "DS_ADLS_CSV_FOLDER",
+						"referenceName": "DS_ADLS_CSV",
 						"type": "DatasetReference",
 						"parameters": {
 							"pContainer": {
@@ -143,6 +135,10 @@
 							},
 							"pDirectory": {
 								"value": "@pipeline().parameters.pTgtDirectory",
+								"type": "Expression"
+							},
+							"pFileName": {
+								"value": "@pipeline().parameters.pTgtFile",
 								"type": "Expression"
 							}
 						}
@@ -155,10 +151,6 @@
 				"type": "string",
 				"defaultValue": "youflix"
 			},
-			"pSrcPartColumn": {
-				"type": "string",
-				"defaultValue": "user_subscription_device_id"
-			},
 			"pSrcTable": {
 				"type": "string",
 				"defaultValue": "user_subscription_device"
@@ -170,6 +162,10 @@
 			"pTgtContainer": {
 				"type": "string",
 				"defaultValue": "syn-fs"
+			},
+			"pTgtFile": {
+				"type": "string",
+				"defaultValue": "user_subscription_device.csv"
 			}
 		},
 		"annotations": []

@@ -1,0 +1,36 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"workspaceName": {
+			"value": "di-mentoring-synapse-wsp-vb2"
+		},
+		"LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI_accountKey": {
+			"value": ""
+		},
+		"LS_ASYN_WSP_VB2_connectionString": {
+			"value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=di-mentoring-synapse-wsp-vb2-ondemand.sql.azuresynapse.net;Initial Catalog=LDW"
+		},
+		"di-mentoring-synapse-wsp-vb2-WorkspaceDefaultSqlServer_connectionString": {
+			"value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:di-mentoring-synapse-wsp-vb2.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
+		},
+		"LS_ABLB_STDIMENTORINGBLOBVB2_SMI_properties_typeProperties_serviceEndpoint": {
+			"value": "https://stdimentoringblobvb2.blob.core.windows.net/"
+		},
+		"LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI_properties_typeProperties_url": {
+			"value": "https://stdimentoringdatalakevb2.dfs.core.windows.net/"
+		},
+		"LS_ATBL_YouFlixWatermark_SAS_properties_typeProperties_sasUri_secretName": {
+			"value": "scrt-stdimentoringdatalakevb-YouFlixWatermark-tbl"
+		},
+		"LS_KV_DI_MENTORING_VB2_properties_typeProperties_baseUrl": {
+			"value": "https://kv-di-mentoring-vb2.vault.azure.net/"
+		},
+		"LS_MSQL_SQLSRVRSH_SA_properties_typeProperties_connectionString_secretName": {
+			"value": "con-msql-youflixdb-sh"
+		},
+		"di-mentoring-synapse-wsp-vb2-WorkspaceDefaultStorage_properties_typeProperties_url": {
+			"value": "https://stdimentoringdatalakevb2.dfs.core.windows.net"
+		}
+	}
+}

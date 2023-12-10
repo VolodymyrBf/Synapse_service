@@ -1,0 +1,2455 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"workspaceName": {
+			"type": "string",
+			"metadata": "Workspace name",
+			"defaultValue": "di-mentoring-synapse-wsp-vb2"
+		},
+		"LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI'"
+		},
+		"LS_ASYN_WSP_VB2_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'LS_ASYN_WSP_VB2'",
+			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=di-mentoring-synapse-wsp-vb2-ondemand.sql.azuresynapse.net;Initial Catalog=LDW"
+		},
+		"di-mentoring-synapse-wsp-vb2-WorkspaceDefaultSqlServer_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'di-mentoring-synapse-wsp-vb2-WorkspaceDefaultSqlServer'",
+			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:di-mentoring-synapse-wsp-vb2.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
+		},
+		"LS_ABLB_STDIMENTORINGBLOBVB2_SMI_properties_typeProperties_serviceEndpoint": {
+			"type": "string",
+			"defaultValue": "https://stdimentoringblobvb2.blob.core.windows.net/"
+		},
+		"LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://stdimentoringdatalakevb2.dfs.core.windows.net/"
+		},
+		"LS_ATBL_YouFlixWatermark_SAS_properties_typeProperties_sasUri_secretName": {
+			"type": "string",
+			"defaultValue": "scrt-stdimentoringdatalakevb-YouFlixWatermark-tbl"
+		},
+		"LS_KV_DI_MENTORING_VB2_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://kv-di-mentoring-vb2.vault.azure.net/"
+		},
+		"LS_MSQL_SQLSRVRSH_SA_properties_typeProperties_connectionString_secretName": {
+			"type": "string",
+			"defaultValue": "con-msql-youflixdb-sh"
+		},
+		"di-mentoring-synapse-wsp-vb2-WorkspaceDefaultStorage_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://stdimentoringdatalakevb2.dfs.core.windows.net"
+		}
+	},
+	"variables": {
+		"workspaceId": "[concat('Microsoft.Synapse/workspaces/', parameters('workspaceName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('workspaceName'), '/PL_ADLS_bronze_DF_sIlver')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "DF_COPY_RATINGS",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_COPY_RATINGS",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"fBronzeTitleRatingsParquet": {
+										"pContainer": {
+											"value": "@pipeline().parameters.pDLakeContainer",
+											"type": "Expression"
+										},
+										"pDirectory": {
+											"value": "@pipeline().parameters.pRatingsBronzeDirectory",
+											"type": "Expression"
+										},
+										"pFile": {
+											"value": "@pipeline().parameters.pRatingsBronzeFile",
+											"type": "Expression"
+										}
+									},
+									"fSilverTitleRatingsParquet": {
+										"pContainer": {
+											"value": "@pipeline().parameters.pDLakeContainer",
+											"type": "Expression"
+										},
+										"pDirectory": {
+											"value": "@pipeline().parameters.pRatingsSilverDirectory",
+											"type": "Expression"
+										}
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "DF_COPY_TITLE_EPISODE",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "DF_COPY_RATINGS",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_COPY_TITLE_EPISODE",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"fBronzeTitleEpisodeParquet": {
+										"pContainer": {
+											"value": "@pipeline().parameters.pDLakeContainer",
+											"type": "Expression"
+										},
+										"pDirectory": {
+											"value": "@pipeline().parameters.pRatingsBronzeDirectory",
+											"type": "Expression"
+										},
+										"pFile": {
+											"value": "@pipeline().parameters.pEpisodeBronzeFile",
+											"type": "Expression"
+										}
+									},
+									"fSilverTitleEpisodeParquet": {
+										"pContainer": {
+											"value": "@pipeline().parameters.pDLakeContainer",
+											"type": "Expression"
+										},
+										"pDirectory": {
+											"value": "@pipeline().parameters.pEpisodeSilverDirectory",
+											"type": "Expression"
+										}
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "DF_COPY_TITLE_BASICS",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "DF_COPY_TITLE_EPISODE",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_COPY_TITLE_BASICS",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"fBronzeTitleBasicsParquet": {
+										"pContainer": {
+											"value": "@pipeline().parameters.pDLakeContainer",
+											"type": "Expression"
+										},
+										"pDirectory": {
+											"value": "@pipeline().parameters.pRatingsBronzeDirectory",
+											"type": "Expression"
+										},
+										"pFile": {
+											"value": "@pipeline().parameters.pTitleBasicsFile",
+											"type": "Expression"
+										}
+									},
+									"fSilverTitlesParquet": {
+										"pContainer": {
+											"value": "@pipeline().parameters.pDLakeContainer",
+											"type": "Expression"
+										},
+										"pDirectory": {
+											"value": "@pipeline().parameters.pTitlesSilverDirectory",
+											"type": "Expression"
+										}
+									},
+									"fSilverTitleGenresParquet": {
+										"pContainer": {
+											"value": "@pipeline().parameters.pDLakeContainer",
+											"type": "Expression"
+										},
+										"pDirectory": {
+											"value": "@pipeline().parameters.pTitleGenresSilverDirectory",
+											"type": "Expression"
+										}
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"pDLakeContainer": {
+						"type": "string",
+						"defaultValue": "data"
+					},
+					"pRatingsBronzeDirectory": {
+						"type": "string",
+						"defaultValue": "bronze/imdb"
+					},
+					"pRatingsBronzeFile": {
+						"type": "string",
+						"defaultValue": "title.ratings.parquet"
+					},
+					"pRatingsSilverDirectory": {
+						"type": "string",
+						"defaultValue": "silver/imdb/title_ratings"
+					},
+					"pEpisodeBronzeFile": {
+						"type": "string",
+						"defaultValue": "title.episode.parquet"
+					},
+					"pEpisodeSilverDirectory": {
+						"type": "string",
+						"defaultValue": "silver/imdb/episode_belongs_to"
+					},
+					"pTitleBasicsFile": {
+						"type": "string",
+						"defaultValue": "title.basics.parquet"
+					},
+					"pTitlesSilverDirectory": {
+						"type": "string",
+						"defaultValue": "silver/imdb/titles"
+					},
+					"pTitleGenresSilverDirectory": {
+						"type": "string",
+						"defaultValue": "silver/imdb/title_genres"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-08-11T14:10:44Z"
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/dataflows/DF_COPY_RATINGS')]",
+				"[concat(variables('workspaceId'), '/dataflows/DF_COPY_TITLE_EPISODE')]",
+				"[concat(variables('workspaceId'), '/dataflows/DF_COPY_TITLE_BASICS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/PL_DATA_ABLB_to_ADLS_TSV_to_PARQUET')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "ACT_MT_Copy_TSV_to_PARQUET",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": false,
+									"wildcardFileName": "*.tsv.gz",
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_ABLB_TSV_GZ",
+								"type": "DatasetReference",
+								"parameters": {
+									"pContainer": {
+										"value": "@pipeline().parameters.pSrcContainer",
+										"type": "Expression"
+									}
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_ADLS_PARQUET_DIR",
+								"type": "DatasetReference",
+								"parameters": {
+									"pContainer": {
+										"value": "@pipeline().parameters.pTgtContainer",
+										"type": "Expression"
+									},
+									"pDirectory": {
+										"value": "@pipeline().parameters.pTgtDirectory",
+										"type": "Expression"
+									}
+								}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"pSrcContainer": {
+						"type": "String",
+						"defaultValue": "imdb"
+					},
+					"pTgtContainer": {
+						"type": "String",
+						"defaultValue": "imdb"
+					},
+					"pTgtDirectory": {
+						"type": "String",
+						"defaultValue": "bronze"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-08-11T14:10:41Z"
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/DS_ABLB_TSV_GZ')]",
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_PARQUET_DIR')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/PL_DATA_IMDB')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "ACT_GEN_EPIPE_PL_DATA_ABLB_to_ADLS_TSV_to_PARQUET",
+						"type": "ExecutePipeline",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "PL_DATA_ABLB_to_ADLS_TSV_to_PARQUET",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"pSrcContainer": "imdb",
+								"pTgtContainer": "data",
+								"pTgtDirectory": "bronze/imdb"
+							}
+						}
+					},
+					{
+						"name": "ACT_GEN_EPIPE_PL_ADLS_bronze_DF_sIlver",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "ACT_GEN_EPIPE_PL_DATA_ABLB_to_ADLS_TSV_to_PARQUET",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "PL_ADLS_bronze_DF_sIlver",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {
+								"pDLakeContainer": "data",
+								"pRatingsBronzeDirectory": "bronze/imdb",
+								"pRatingsBronzeFile": "title.ratings.parquet",
+								"pRatingsSilverDirectory": "silver/imdb/title_ratings",
+								"pEpisodeBronzeFile": "title.episode.parquet",
+								"pEpisodeSilverDirectory": "silver/imdb/episode_belongs_to",
+								"pTitleBasicsFile": "title.basics.parquet",
+								"pTitlesSilverDirectory": "silver/imdb/titles",
+								"pTitleGenresSilverDirectory": "silver/imdb/title_genres"
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-08-11T14:10:47Z"
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/pipelines/PL_DATA_ABLB_to_ADLS_TSV_to_PARQUET')]",
+				"[concat(variables('workspaceId'), '/pipelines/PL_ADLS_bronze_DF_sIlver')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/PL_MSQL_ADLS_delta_v2')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "Lookup_last_watermark",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "Set vCurrExtractTime",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureTableSource",
+								"azureTableSourceIgnoreTableNotFound": false
+							},
+							"dataset": {
+								"referenceName": "DS_ATBL_YouFlixWatermark",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "ForEachTable",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "Lookup_last_watermark",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Lookup_last_watermark').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Update_last_watermark_entity",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "Copy_MSQL_to_ADLS",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureTableSource",
+											"additionalColumns": [
+												{
+													"name": "update_col",
+													"value": {
+														"value": "@variables('vCurrExtractTime')",
+														"type": "Expression"
+													}
+												}
+											],
+											"azureTableSourceQuery": {
+												"value": "@concat('PartitionKey eq ''',item().PartitionKey,''' and ','RowKey eq ''',item().PartitionKey,'''')",
+												"type": "Expression"
+											},
+											"azureTableSourceIgnoreTableNotFound": false
+										},
+										"sink": {
+											"type": "AzureTableSink",
+											"azureTableInsertType": "merge",
+											"azureTablePartitionKeyName": {
+												"value": "PartitionKey",
+												"type": "Expression"
+											},
+											"azureTableRowKeyName": {
+												"value": "RowKey",
+												"type": "Expression"
+											},
+											"writeBatchSize": 10000
+										},
+										"enableStaging": false,
+										"dataIntegrationUnits": 2,
+										"translator": {
+											"type": "TabularTranslator",
+											"mappings": [
+												{
+													"source": {
+														"name": "PartitionKey",
+														"type": "String"
+													},
+													"sink": {
+														"name": "PartitionKey",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"name": "RowKey",
+														"type": "String"
+													},
+													"sink": {
+														"name": "RowKey",
+														"type": "String"
+													}
+												},
+												{
+													"source": {
+														"name": "Timestamp",
+														"type": "DateTimeOffset"
+													},
+													"sink": {
+														"name": "Timestamp",
+														"type": "DateTimeOffset"
+													}
+												},
+												{
+													"source": {
+														"name": "update_col",
+														"type": "String"
+													},
+													"sink": {
+														"name": "watermark",
+														"type": "DateTimeOffset"
+													}
+												},
+												{
+													"source": {
+														"name": "watermark_column",
+														"type": "String"
+													},
+													"sink": {
+														"name": "watermark_column",
+														"type": "String"
+													}
+												}
+											],
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "DS_ATBL_YouFlixWatermark",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DS_ATBL_YouFlixWatermark",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								},
+								{
+									"name": "Copy_MSQL_to_ADLS",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "SqlServerSource",
+											"sqlReaderQuery": {
+												"value": "@concat('SELECT * FROM ',concat(pipeline().parameters.pSrcSchema,'.',item().PartitionKey),' WHERE cast(',item().watermark_column,' as datetimeoffset) >= ''',item().watermark,''' AND cast(',item().watermark_column,' as datetimeoffset) < ''',variables('vCurrExtractTime'),'''')",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".txt"
+											}
+										},
+										"enableStaging": false,
+										"dataIntegrationUnits": 2,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "DS_SQL_YouFlix",
+											"type": "DatasetReference",
+											"parameters": {
+												"pTblName": {
+													"value": "@item().PartitionKey",
+													"type": "Expression"
+												},
+												"pSchemaName": {
+													"value": "@pipeline().parameters.pSrcSchema",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DS_ADLS_CSV",
+											"type": "DatasetReference",
+											"parameters": {
+												"pContainer": {
+													"value": "@pipeline().parameters.pContainer",
+													"type": "Expression"
+												},
+												"pDirectory": {
+													"value": "@pipeline().parameters.pDirectory",
+													"type": "Expression"
+												},
+												"pFileName": {
+													"value": "@replace(replace(concat(pipeline().parameters.pSrcSchema,'_',item().PartitionKey,'/',pipeline().parameters.pSrcSchema,'_',item().PartitionKey,'_',formatDateTime(variables('vCurrExtractTime'),'yyyyMMddhhmmss'),'.csv'), '[', ''), ']', '')",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					},
+					{
+						"name": "Set vCurrExtractTime",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "vCurrExtractTime",
+							"value": {
+								"value": "@utcnow()",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "Generate_flag_file",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "ForEachTable",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"sqlReaderQuery": {
+									"value": "SELECT 'Success' as RESULT;",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"dataIntegrationUnits": 2,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_SQL_YouFlix",
+								"type": "DatasetReference",
+								"parameters": {
+									"pTblName": {
+										"value": "@pipeline().parameters.pSrcSchema",
+										"type": "Expression"
+									},
+									"pSchemaName": "watermark"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_ADLS_CSV",
+								"type": "DatasetReference",
+								"parameters": {
+									"pContainer": {
+										"value": "@pipeline().parameters.pContainer",
+										"type": "Expression"
+									},
+									"pDirectory": {
+										"value": "@pipeline().parameters.pDirectory",
+										"type": "Expression"
+									},
+									"pFileName": {
+										"value": "@concat('Success.csv')",
+										"type": "Expression"
+									}
+								}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"pSrcSchema": {
+						"type": "string",
+						"defaultValue": "[youflix]"
+					},
+					"pContainer": {
+						"type": "string",
+						"defaultValue": "data"
+					},
+					"pDirectory": {
+						"type": "string",
+						"defaultValue": "bronze/youflix"
+					}
+				},
+				"variables": {
+					"vCurrExtractTime": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-08-12T10:48:19Z"
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/DS_ATBL_YouFlixWatermark')]",
+				"[concat(variables('workspaceId'), '/datasets/DS_SQL_YouFlix')]",
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_CSV')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/PL_TRAN_ASYN_GenerateTop10ShowsDataset')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "ACT_GEN_SPRC_usp_GenerateTop10ShowsDataset",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[dbo].[usp_GenerateTop10ShowsDataset]"
+						},
+						"linkedServiceName": {
+							"referenceName": "LS_ASYN_WSP_VB2",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-08-20T06:17:13Z"
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/LS_ASYN_WSP_VB2')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/PL_WEATHER_JSON_to_PARQ')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "Copy JSON to Parquet",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "JsonSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "JsonReadSettings"
+								}
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"path": "$['latitude']"
+										},
+										"sink": {
+											"name": "latitude",
+											"type": "Double"
+										}
+									},
+									{
+										"source": {
+											"path": "$['longitude']"
+										},
+										"sink": {
+											"name": "longitude",
+											"type": "Double"
+										}
+									},
+									{
+										"source": {
+											"path": "$['generationtime_ms']"
+										},
+										"sink": {
+											"name": "generationtime_ms"
+										}
+									}
+								],
+								"collectionReference": "",
+								"mapComplexValuesToString": false
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_ADLS_JSON",
+								"type": "DatasetReference",
+								"parameters": {
+									"pContainer": {
+										"value": "@pipeline().parameters.pSrcContainer",
+										"type": "Expression"
+									},
+									"pDirectory": {
+										"value": "@pipeline().parameters.pSrcDirectory",
+										"type": "Expression"
+									},
+									"pFile": {
+										"value": "@pipeline().parameters.pSrcFile",
+										"type": "Expression"
+									}
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_ADLS_PARQUET_FILE",
+								"type": "DatasetReference",
+								"parameters": {
+									"pContainer": {
+										"value": "@pipeline().parameters.pTgtContainer",
+										"type": "Expression"
+									},
+									"pDirectory": {
+										"value": "@pipeline().parameters.pTgtDirectory",
+										"type": "Expression"
+									},
+									"pFile": {
+										"value": "@replace(pipeline().parameters.pSrcFile, '.json', concat('_', formatDateTime(utcnow(),'yyyyMMddhhmmss'), '.parquet'))",
+										"type": "Expression"
+									}
+								}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"pTgtContainer": {
+						"type": "string",
+						"defaultValue": "taxi-data"
+					},
+					"pTgtDirectory": {
+						"type": "string",
+						"defaultValue": "silver/weather_data"
+					},
+					"pSrcContainer": {
+						"type": "string",
+						"defaultValue": "taxi-data"
+					},
+					"pSrcDirectory": {
+						"type": "string",
+						"defaultValue": "bronze/weather_data"
+					},
+					"pSrcFile": {
+						"type": "string",
+						"defaultValue": "weather_data_20230101_20230131.json"
+					}
+				},
+				"variables": {
+					"vFileName": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-11-24T16:44:40Z"
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_JSON')]",
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_PARQUET_FILE')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/PL_WEATHER_REST_to_ADLS')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"description": "Pipeline copies data from \"https://archive-api.open-meteo.com/v1/archive\" to ADLS blob",
+				"activities": [
+					{
+						"name": "GetWeatherData",
+						"type": "WebActivity",
+						"dependsOn": [
+							{
+								"activity": "Set vFileName",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"url": {
+								"value": "@concat(pipeline().parameters.pWeather_GET_URL_header, '&start_date=', pipeline().parameters.pStartDate, '&end_date=', pipeline().parameters.pEndDate, pipeline().parameters.pWeather_GET_URL_footer)",
+								"type": "Expression"
+							},
+							"connectVia": {
+								"referenceName": "AutoResolveIntegrationRuntime",
+								"type": "IntegrationRuntimeReference"
+							},
+							"method": "GET",
+							"headers": {}
+						}
+					},
+					{
+						"name": "PutWeatherDataIntoBlob",
+						"type": "WebActivity",
+						"dependsOn": [
+							{
+								"activity": "GetWeatherData",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"url": {
+								"value": "@replace(pipeline().parameters.pBlob_PUT_URL, '%folder_file%', concat(pipeline().parameters.pWeatherFolder, variables('vFileName')))",
+								"type": "Expression"
+							},
+							"connectVia": {
+								"referenceName": "AutoResolveIntegrationRuntime",
+								"type": "IntegrationRuntimeReference"
+							},
+							"method": "PUT",
+							"headers": {
+								"x-ms-blob-type": "BlockBlob"
+							},
+							"body": {
+								"value": "@activity('GetWeatherData').output.Response",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "Set vFileName",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "vFileName",
+							"value": {
+								"value": "@concat('weather_data_',replace(pipeline().parameters.pStartDate, '-', ''), '_', replace(pipeline().parameters.pEndDate, '-', ''), '.json')",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"pWeather_GET_URL_header": {
+						"type": "string",
+						"defaultValue": "https://archive-api.open-meteo.com/v1/archive?latitude=40.4133,40.6148,40.861,40.72510235,40.554722,40.5984&longitude=-74.1007,-73.8418,-73.845,-73.97958331,-74.18,-74.07264121"
+					},
+					"pBlob_PUT_URL": {
+						"type": "string",
+						"defaultValue": "https://stdimentoringdatalakevb2.blob.core.windows.net/%folder_file%?sv=2022-11-02&ss=bf&srt=co&sp=rwdlacy&se=2023-12-01T17:54:38Z&st=2023-10-29T09:54:38Z&spr=https&sig=UpS%2FHCmXRnBjDIUKhiNXph3KYZuJK8ikgp4dfqwMXUk%3D"
+					},
+					"pStartDate": {
+						"type": "string",
+						"defaultValue": "2023-02-01"
+					},
+					"pEndDate": {
+						"type": "string",
+						"defaultValue": "2023-02-28"
+					},
+					"pWeather_GET_URL_footer": {
+						"type": "string",
+						"defaultValue": "&hourly=temperature_2m,relativehumidity_2m,rain,snowfall,weathercode,cloudcover&timezone=America%2FNew_York"
+					},
+					"pWeatherFolder": {
+						"type": "string",
+						"defaultValue": "taxi-data/bronze/weather_data/"
+					}
+				},
+				"variables": {
+					"vSplit_test": {
+						"type": "String"
+					},
+					"vFileName": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "TAXI_TRIP"
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-11-24T16:44:30Z"
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Pipeline 1')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "Copy MSQL in partitions",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"sqlReaderQuery": {
+									"value": "@concat('select * from ', pipeline().parameters.pSrcSchema, '.', pipeline().parameters.pSrcTable, ' WHERE ?AdfDynamicRangePartitionCondition')",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "DynamicRange",
+								"partitionSettings": {
+									"partitionColumnName": {
+										"value": "@{pipeline().parameters.pSrcPartColumn}",
+										"type": "Expression"
+									},
+									"partitionUpperBound": "",
+									"partitionLowerBound": ""
+								}
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".csv"
+								}
+							},
+							"enableStaging": false,
+							"parallelCopies": 4,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "user_subscription_device_id",
+											"type": "Int64",
+											"physicalType": "bigint"
+										},
+										"sink": {
+											"name": "user_subscription_device_id",
+											"type": "String",
+											"physicalType": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "user_id",
+											"type": "Int64",
+											"physicalType": "bigint"
+										},
+										"sink": {
+											"name": "user_id",
+											"type": "String",
+											"physicalType": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "subscription_id",
+											"type": "Int64",
+											"physicalType": "bigint"
+										},
+										"sink": {
+											"name": "subscription_id",
+											"type": "String",
+											"physicalType": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "device_id",
+											"type": "Int64",
+											"physicalType": "bigint"
+										},
+										"sink": {
+											"name": "device_id",
+											"type": "String",
+											"physicalType": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "created_timestamp",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										},
+										"sink": {
+											"name": "created_timestamp",
+											"type": "String",
+											"physicalType": "String"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_SQL_YouFlix",
+								"type": "DatasetReference",
+								"parameters": {
+									"pTblName": {
+										"value": "@pipeline().parameters.pSrcTable",
+										"type": "Expression"
+									},
+									"pSchemaName": {
+										"value": "@pipeline().parameters.pSrcSchema",
+										"type": "Expression"
+									}
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_ADLS_CSV_FOLDER",
+								"type": "DatasetReference",
+								"parameters": {
+									"pContainer": {
+										"value": "@pipeline().parameters.pTgtContainer",
+										"type": "Expression"
+									},
+									"pDirectory": {
+										"value": "@pipeline().parameters.pTgtDirectory",
+										"type": "Expression"
+									}
+								}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"pSrcSchema": {
+						"type": "string",
+						"defaultValue": "youflix"
+					},
+					"pSrcPartColumn": {
+						"type": "string",
+						"defaultValue": "user_subscription_device_id"
+					},
+					"pSrcTable": {
+						"type": "string",
+						"defaultValue": "user_subscription_device"
+					},
+					"pTgtDirectory": {
+						"type": "string",
+						"defaultValue": "part_test/2nd_atmpt"
+					},
+					"pTgtContainer": {
+						"type": "string",
+						"defaultValue": "syn-fs"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/DS_SQL_YouFlix')]",
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_CSV_FOLDER')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DS_ABLB_TSV_GZ')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_ABLB_STDIMENTORINGBLOBVB2_SMI",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"pContainer": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": {
+							"value": "@dataset().pContainer",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": "\t",
+					"compressionCodec": "gzip",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": ""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/LS_ABLB_STDIMENTORINGBLOBVB2_SMI')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DS_ADLS_CSV')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"pContainer": {
+						"type": "string"
+					},
+					"pDirectory": {
+						"type": "string"
+					},
+					"pFileName": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().pFileName",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().pDirectory",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().pContainer",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DS_ADLS_CSV_FOLDER')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"pContainer": {
+						"type": "string"
+					},
+					"pDirectory": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": {
+							"value": "@dataset().pDirectory",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().pContainer",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DS_ADLS_JSON')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"pContainer": {
+						"type": "string"
+					},
+					"pDirectory": {
+						"type": "string"
+					},
+					"pFile": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().pFile",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().pDirectory",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().pContainer",
+							"type": "Expression"
+						}
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DS_ADLS_PARQUET_DIR')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"pContainer": {
+						"type": "String"
+					},
+					"pDirectory": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": {
+							"value": "@dataset().pDirectory",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().pContainer",
+							"type": "Expression"
+						}
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DS_ADLS_PARQUET_FILE')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"pContainer": {
+						"type": "String"
+					},
+					"pDirectory": {
+						"type": "String"
+					},
+					"pFile": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().pFile",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().pDirectory",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().pContainer",
+							"type": "Expression"
+						}
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DS_ATBL_YouFlixWatermark')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_ATBL_YouFlixWatermark_SAS",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureTable",
+				"schema": [],
+				"typeProperties": {
+					"tableName": "YouFlixWatermark"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/LS_ATBL_YouFlixWatermark_SAS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DS_SQL_YouFlix')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_MSQL_SQLSRVRSH_SA",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"pTblName": {
+						"type": "string"
+					},
+					"pSchemaName": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "SqlServerTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": {
+						"value": "@dataset().pSchemaName",
+						"type": "Expression"
+					},
+					"table": {
+						"value": "@dataset().pTblName",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/LS_MSQL_SQLSRVRSH_SA')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/ADBR_DI_MENTORING_VB2')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"description": "Azure Databricks linked service",
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-1568907857943605.5.azuredatabricks.net/",
+					"authentication": "MSI",
+					"workspaceResourceId": "/subscriptions/e71eb201-ee2e-47da-ab86-41042b9f04c2/resourceGroups/rg-di-mentoring-vb2/providers/Microsoft.Databricks/workspaces/dbs-di-mentoring-vb2",
+					"existingClusterId": "0812-105440-dln5r2rg"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/LS_ABLB_STDIMENTORINGBLOBVB2_SMI')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"description": "Linked service to Azure blob storage stdimentoringblobvb2",
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"serviceEndpoint": "[parameters('LS_ABLB_STDIMENTORINGBLOBVB2_SMI_properties_typeProperties_serviceEndpoint')]",
+					"accountKind": "StorageV2"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"description": "Linked service to stdimentoringdatalakevb2 storage account",
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI_accountKey')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/LS_ASYN_WSP_VB2')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDW",
+				"typeProperties": {
+					"connectionString": "[parameters('LS_ASYN_WSP_VB2_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/LS_ATBL_YouFlixWatermark_SAS')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"description": "Linked service to YouFlixWatermark table",
+				"annotations": [],
+				"type": "AzureTableStorage",
+				"typeProperties": {
+					"sasUri": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "LS_KV_DI_MENTORING_VB2",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "[parameters('LS_ATBL_YouFlixWatermark_SAS_properties_typeProperties_sasUri_secretName')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]",
+				"[concat(variables('workspaceId'), '/linkedServices/LS_KV_DI_MENTORING_VB2')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/LS_KV_DI_MENTORING_VB2')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"description": "Linked service to kv-di-mentoring-vb",
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('LS_KV_DI_MENTORING_VB2_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/LS_MSQL_SQLSRVRSH_SA')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"description": "Linked service to SQL Server, YouflixDB database (on-prem)",
+				"annotations": [],
+				"type": "SqlServer",
+				"typeProperties": {
+					"connectionString": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "LS_KV_DI_MENTORING_VB2",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "[parameters('LS_MSQL_SQLSRVRSH_SA_properties_typeProperties_connectionString_secretName')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "ir-di-mentoring-vb2",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/ir-di-mentoring-vb2')]",
+				"[concat(variables('workspaceId'), '/linkedServices/LS_KV_DI_MENTORING_VB2')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/di-mentoring-synapse-wsp-vb2-WorkspaceDefaultSqlServer')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"parameters": {
+					"DBName": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlDW",
+				"typeProperties": {
+					"connectionString": "[parameters('di-mentoring-synapse-wsp-vb2-WorkspaceDefaultSqlServer_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/di-mentoring-synapse-wsp-vb2-WorkspaceDefaultStorage')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('di-mentoring-synapse-wsp-vb2-WorkspaceDefaultStorage_properties_typeProperties_url')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/TRG_PL_TRAN_ASYN_GenerateTop10ShowsDataset')]",
+			"type": "Microsoft.Synapse/workspaces/triggers",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "PL_TRAN_ASYN_GenerateTop10ShowsDataset",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Day",
+						"interval": 1,
+						"startTime": "2023-08-20T06:18:00Z",
+						"timeZone": "UTC",
+						"schedule": {
+							"minutes": [
+								0
+							],
+							"hours": [
+								9
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/pipelines/PL_TRAN_ASYN_GenerateTop10ShowsDataset')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/AutoResolveIntegrationRuntime')]",
+			"type": "Microsoft.Synapse/workspaces/integrationRuntimes",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "Managed",
+				"typeProperties": {
+					"computeProperties": {
+						"location": "AutoResolve",
+						"dataFlowProperties": {
+							"computeType": "General",
+							"coreCount": 8,
+							"timeToLive": 0
+						}
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/ir-di-mentoring-vb2')]",
+			"type": "Microsoft.Synapse/workspaces/integrationRuntimes",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "SelfHosted",
+				"description": "MSQL self-hosted integration runtime",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DF_COPY_RATINGS')]",
+			"type": "Microsoft.Synapse/workspaces/dataflows",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_ADLS_PARQUET_FILE",
+								"type": "DatasetReference"
+							},
+							"name": "fBronzeTitleRatingsParquet",
+							"description": "Import data from bronze/imdb/title.ratings.parquet"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_ADLS_PARQUET_DIR",
+								"type": "DatasetReference"
+							},
+							"name": "fSilverTitleRatingsParquet",
+							"description": "Export data to silver/imdb/title_ratings/"
+						}
+					],
+					"transformations": [],
+					"scriptLines": [
+						"source(output(",
+						"          tconst as string,",
+						"          averageRating as decimal(10,0),",
+						"          numVotes as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     format: 'parquet') ~> fBronzeTitleRatingsParquet",
+						"fBronzeTitleRatingsParquet sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     filePattern:'title_ratings-[n].parquet',",
+						"     umask: 0777,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     mapColumn(",
+						"          title_id = tconst,",
+						"          average_rating = averageRating,",
+						"          num_votes = numVotes",
+						"     ),",
+						"     partitionBy('roundRobin', 10)) ~> fSilverTitleRatingsParquet"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_PARQUET_FILE')]",
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_PARQUET_DIR')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DF_COPY_TITLE_BASICS')]",
+			"type": "Microsoft.Synapse/workspaces/dataflows",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_ADLS_PARQUET_FILE",
+								"type": "DatasetReference"
+							},
+							"name": "fBronzeTitleBasicsParquet",
+							"description": "Import data from bronze/imdb/title.basics.parquet"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_ADLS_PARQUET_DIR",
+								"type": "DatasetReference"
+							},
+							"name": "fSilverTitlesParquet",
+							"description": "Export data to silver/imdb/titles"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_ADLS_PARQUET_DIR",
+								"type": "DatasetReference"
+							},
+							"name": "fSilverTitleGenresParquet",
+							"description": "Export data to silver/imdb/title_genres"
+						}
+					],
+					"transformations": [
+						{
+							"name": "SelectTitlesColumns",
+							"description": "Select columns necessary for titles dataset"
+						},
+						{
+							"name": "FlattenGenres",
+							"description": "Unroll 'genres' array into individual rows"
+						},
+						{
+							"name": "AddGenresListColumn",
+							"description": "Adding 'genres_list' column as splitted 'genres' column (comma-separated)"
+						},
+						{
+							"name": "RankTitleGenre",
+							"description": "Calculate a rank value for each genre within a movie"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          tconst as string,",
+						"          titleType as string,",
+						"          primaryTitle as string,",
+						"          originalTitle as string,",
+						"          isAdult as boolean,",
+						"          startYear as integer,",
+						"          endYear as integer,",
+						"          runtimeMinutes as integer,",
+						"          genres as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     format: 'parquet') ~> fBronzeTitleBasicsParquet",
+						"fBronzeTitleBasicsParquet select(mapColumn(",
+						"          title_id = tconst,",
+						"          title_type = titleType,",
+						"          primary_title = primaryTitle,",
+						"          original_title = originalTitle,",
+						"          is_adult = isAdult,",
+						"          start_year = startYear,",
+						"          end_year = endYear,",
+						"          runtime_minutes = runtimeMinutes",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> SelectTitlesColumns",
+						"AddGenresListColumn foldDown(unroll(genres_list, genres_list),",
+						"     mapColumn(",
+						"          title_id = tconst,",
+						"          genre = genres_list",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> FlattenGenres",
+						"fBronzeTitleBasicsParquet derive(genres_list = split(genres, ',')) ~> AddGenresListColumn",
+						"FlattenGenres window(over(title_id),",
+						"     asc(genre, true),",
+						"     rank = rowNumber()) ~> RankTitleGenre",
+						"SelectTitlesColumns sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     filePattern:'titles-[n].parquet',",
+						"     umask: 0777,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('roundRobin', 10)) ~> fSilverTitlesParquet",
+						"RankTitleGenre sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     filePattern:'title_genres-[n].parquet',",
+						"     umask: 0777,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('roundRobin', 10)) ~> fSilverTitleGenresParquet"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_PARQUET_FILE')]",
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_PARQUET_DIR')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DF_COPY_TITLE_EPISODE')]",
+			"type": "Microsoft.Synapse/workspaces/dataflows",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_ADLS_PARQUET_FILE",
+								"type": "DatasetReference"
+							},
+							"name": "fBronzeTitleEpisodeParquet",
+							"description": "Import data from bronze/imdb/title.episode.parquet"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_ADLS_PARQUET_DIR",
+								"type": "DatasetReference"
+							},
+							"name": "fSilverTitleEpisodeParquet",
+							"description": "Export data to silver/imdb/episode_belongs_to/"
+						}
+					],
+					"transformations": [],
+					"scriptLines": [
+						"source(output(",
+						"          tconst as string,",
+						"          parentTconst as string,",
+						"          seasonNumber as integer,",
+						"          episodeNumber as integer",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     format: 'parquet') ~> fBronzeTitleEpisodeParquet",
+						"fBronzeTitleEpisodeParquet sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     filePattern:'episode_belongs_to-[n].parquet',",
+						"     umask: 0777,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     mapColumn(",
+						"          title_id = tconst,",
+						"          parent_tv_show_title_id = parentTconst,",
+						"          season_number = seasonNumber,",
+						"          episode_number = episodeNumber",
+						"     ),",
+						"     partitionBy('roundRobin', 10)) ~> fSilverTitleEpisodeParquet"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_PARQUET_FILE')]",
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_PARQUET_DIR')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/WorkspaceSystemIdentity')]",
+			"type": "Microsoft.Synapse/workspaces/credentials",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "ManagedIdentity",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/TPCH_DB')]",
+			"type": "Microsoft.Synapse/workspaces/databases",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"Ddls": [
+					{
+						"ActionType": "CREATE",
+						"OldEntity": null,
+						"NewEntity": {
+							"Name": "TPCH_DB",
+							"EntityType": "DATABASE",
+							"Origin": {
+								"Type": "SPARK"
+							},
+							"Properties": {
+								"IsSyMSCDMDatabase": true
+							},
+							"Source": {
+								"Provider": "ADLS",
+								"Location": "abfss://dlt@stdimentoringdatalakevb2.dfs.core.windows.net/",
+								"Properties": {
+									"FormatType": "csv",
+									"LinkedServiceName": "di-mentoring-synapse-wsp-vb2-WorkspaceDefaultStorage"
+								}
+							},
+							"PublishStatus": "PUBLISHED",
+							"ObjectVersion": 1,
+							"ObjectId": "a8e533c9-4b26-45c6-a624-89e3fea5dd4a"
+						},
+						"Source": {
+							"Type": "SPARK"
+						}
+					},
+					{
+						"ActionType": "CREATE",
+						"OldEntity": null,
+						"NewEntity": {
+							"Name": "customers",
+							"EntityType": "TABLE",
+							"TableType": "EXTERNAL",
+							"Namespace": {
+								"SchemaName": null,
+								"DatabaseName": "TPCH_DB",
+								"DatabaseId": null
+							},
+							"StorageDescriptor": {
+								"Distribution": null,
+								"Columns": [
+									{
+										"Name": "C_CUSTKEY",
+										"Description": null,
+										"OriginDataTypeName": {
+											"TypeName": "long",
+											"IsComplexType": false,
+											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
+											"Properties": {
+												"HIVE_TYPE_STRING": "long"
+											}
+										}
+									},
+									{
+										"Name": "C_NAME",
+										"Description": null,
+										"OriginDataTypeName": {
+											"TypeName": "string",
+											"IsComplexType": false,
+											"IsNullable": true,
+											"Length": 8000,
+											"Precision": 0,
+											"Scale": 0,
+											"Properties": {
+												"HIVE_TYPE_STRING": "string"
+											}
+										}
+									},
+									{
+										"Name": "C_ADDRESS",
+										"Description": null,
+										"OriginDataTypeName": {
+											"TypeName": "string",
+											"IsComplexType": false,
+											"IsNullable": true,
+											"Length": 8000,
+											"Precision": 0,
+											"Scale": 0,
+											"Properties": {
+												"HIVE_TYPE_STRING": "string"
+											}
+										}
+									},
+									{
+										"Name": "C_NATIONKEY",
+										"Description": null,
+										"OriginDataTypeName": {
+											"TypeName": "long",
+											"IsComplexType": false,
+											"IsNullable": true,
+											"Length": 0,
+											"Precision": 0,
+											"Scale": 0,
+											"Properties": {
+												"HIVE_TYPE_STRING": "long"
+											}
+										}
+									},
+									{
+										"Name": "C_PHONE",
+										"Description": null,
+										"OriginDataTypeName": {
+											"TypeName": "string",
+											"IsComplexType": false,
+											"IsNullable": true,
+											"Length": 8000,
+											"Precision": 0,
+											"Scale": 0,
+											"Properties": {
+												"HIVE_TYPE_STRING": "string"
+											}
+										}
+									},
+									{
+										"Name": "C_ACCTBAL",
+										"Description": null,
+										"OriginDataTypeName": {
+											"TypeName": "string",
+											"IsComplexType": false,
+											"IsNullable": true,
+											"Length": 8000,
+											"Precision": 0,
+											"Scale": 0,
+											"Properties": {
+												"HIVE_TYPE_STRING": "string"
+											}
+										}
+									},
+									{
+										"Name": "C_MKTSEGMENT",
+										"Description": null,
+										"OriginDataTypeName": {
+											"TypeName": "string",
+											"IsComplexType": false,
+											"IsNullable": true,
+											"Length": 8000,
+											"Precision": 0,
+											"Scale": 0,
+											"Properties": {
+												"HIVE_TYPE_STRING": "string"
+											}
+										}
+									},
+									{
+										"Name": "C_COMMENT",
+										"Description": null,
+										"OriginDataTypeName": {
+											"TypeName": "string",
+											"IsComplexType": false,
+											"IsNullable": true,
+											"Length": 8000,
+											"Precision": 0,
+											"Scale": 0,
+											"Properties": {
+												"HIVE_TYPE_STRING": "string"
+											}
+										}
+									}
+								],
+								"ColumnSetEntityName": "33808695-d56e-40cc-9b05-569ed697d875",
+								"Format": {
+									"InputFormat": "org.apache.hadoop.mapred.SequenceFileInputFormat",
+									"OutputFormat": "org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat",
+									"FormatType": "csv",
+									"SerializeLib": "org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe",
+									"Properties": {
+										"path": "abfss://dlt@stdimentoringdatalakevb2.dfs.core.windows.net/tpch_data/h_customer.csv",
+										"delimiter": ",",
+										"firstRowAsHeader": "true",
+										"multiLine": "false",
+										"serialization.format": "1",
+										"FormatTypeSetToDatabaseDefault": false,
+										"header": "true"
+									}
+								},
+								"Source": {
+									"Provider": "ADLS",
+									"Location": "abfss://dlt@stdimentoringdatalakevb2.dfs.core.windows.net/tpch_data/h_customer.csv",
+									"Properties": {
+										"LinkedServiceName": "LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI",
+										"LocationSetToDatabaseDefault": false
+									}
+								},
+								"Properties": {
+									"textinputformat.record.delimiter": ",",
+									"compression": "",
+									"derivedModelAttributeInfo": "{\"attributeReferences\":{}}"
+								},
+								"Compressed": false,
+								"SerDeInfo": null,
+								"IsStoredAsSubdirectories": false
+							},
+							"Owner": null,
+							"CreateTime": 0,
+							"LastAccessTime": 0,
+							"Retention": 0,
+							"Temporary": false,
+							"IsRewriteEnabled": false,
+							"ViewOriginalText": null,
+							"ViewExpandedText": null,
+							"Origin": {
+								"Type": "SPARK"
+							},
+							"OriginObjectId": null,
+							"IsSharedEntity": false,
+							"PublishStatus": "PUBLISHED",
+							"Properties": {
+								"Description": "",
+								"DisplayFolderInfo": "{\"name\":\"Others\",\"colorCode\":\"\"}",
+								"PrimaryKeys": "",
+								"spark.sql.sources.provider": "csv",
+								"spark.sql.sources.schema.numParts": "1",
+								"spark.sql.sources.schema.part.0": "{\"type\":\"struct\",\"fields\":[{\"name\":\"C_CUSTKEY\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"C_NAME\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}},{\"name\":\"C_ADDRESS\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}},{\"name\":\"C_NATIONKEY\",\"type\":\"long\",\"nullable\":true,\"metadata\":{}},{\"name\":\"C_PHONE\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}},{\"name\":\"C_ACCTBAL\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}},{\"name\":\"C_MKTSEGMENT\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}},{\"name\":\"C_COMMENT\",\"type\":\"string\",\"nullable\":true,\"metadata\":{}}]}"
+							},
+							"ObjectVersion": 1,
+							"ObjectId": "073cad1c-d9d6-464e-8fdf-293a12714098",
+							"Description": ""
+						},
+						"Source": {
+							"Type": "SPARK"
+						}
+					}
+				]
+			},
+			"dependsOn": []
+		}
+	]
+}

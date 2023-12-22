@@ -1,0 +1,178 @@
+{
+	"name": "PL_TMDB_to_ADLS",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy_TMDB_data",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "RestSource",
+						"httpRequestTimeout": "00:01:40",
+						"requestInterval": "00.00:00:00.010",
+						"requestMethod": "GET",
+						"paginationRules": {
+							"AbsoluteUrl.{id}": "RANGE:1:500:1"
+						}
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"path": "['adult']"
+								},
+								"sink": {
+									"name": "adult"
+								}
+							},
+							{
+								"source": {
+									"path": "['id']"
+								},
+								"sink": {
+									"name": "id"
+								}
+							},
+							{
+								"source": {
+									"path": "['original_language']"
+								},
+								"sink": {
+									"name": "original_language"
+								}
+							},
+							{
+								"source": {
+									"path": "['original_title']"
+								},
+								"sink": {
+									"name": "original_title"
+								}
+							},
+							{
+								"source": {
+									"path": "['overview']"
+								},
+								"sink": {
+									"name": "overview"
+								}
+							},
+							{
+								"source": {
+									"path": "['popularity']"
+								},
+								"sink": {
+									"name": "popularity"
+								}
+							},
+							{
+								"source": {
+									"path": "['release_date']"
+								},
+								"sink": {
+									"name": "release_date"
+								}
+							},
+							{
+								"source": {
+									"path": "['title']"
+								},
+								"sink": {
+									"name": "title"
+								}
+							},
+							{
+								"source": {
+									"path": "['vote_average']"
+								},
+								"sink": {
+									"name": "vote_average"
+								}
+							},
+							{
+								"source": {
+									"path": "['vote_count']"
+								},
+								"sink": {
+									"name": "vote_count"
+								}
+							},
+							{
+								"source": {
+									"path": "['genre_ids']"
+								},
+								"sink": {
+									"name": "items",
+									"type": "String"
+								}
+							}
+						],
+						"collectionReference": "$['results']",
+						"mapComplexValuesToString": true
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_REST_TMDB",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_ADLS_PARQUET_FILE",
+						"type": "DatasetReference",
+						"parameters": {
+							"pContainer": {
+								"value": "@pipeline().parameters.pTgtContainer",
+								"type": "Expression"
+							},
+							"pDirectory": {
+								"value": "@pipeline().parameters.pTgtDirectory",
+								"type": "Expression"
+							},
+							"pFile": {
+								"value": "@pipeline().parameters.pTgtFile",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"pTgtContainer": {
+				"type": "string",
+				"defaultValue": "data"
+			},
+			"pTgtDirectory": {
+				"type": "string",
+				"defaultValue": "bronze/tmdb"
+			},
+			"pTgtFile": {
+				"type": "string",
+				"defaultValue": "movies_init.parquet"
+			}
+		},
+		"annotations": []
+	}
+}

@@ -16,12 +16,14 @@
 				"userProperties": [],
 				"typeProperties": {
 					"source": {
-						"type": "RestSource",
-						"httpRequestTimeout": "00:01:40",
-						"requestInterval": "00.00:00:00.010",
-						"requestMethod": "GET",
-						"paginationRules": {
-							"AbsoluteUrl.{id}": "RANGE:1:500:1"
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": false,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
 						}
 					},
 					"sink": {
@@ -39,50 +41,20 @@
 						"mappings": [
 							{
 								"source": {
-									"path": "['adult']"
+									"path": "['title_id']"
 								},
 								"sink": {
-									"name": "adult"
+									"name": "title_id",
+									"type": "Int64"
 								}
 							},
 							{
 								"source": {
-									"path": "['id']"
+									"path": "['title_type']"
 								},
 								"sink": {
-									"name": "id"
-								}
-							},
-							{
-								"source": {
-									"path": "['original_language']"
-								},
-								"sink": {
-									"name": "original_language"
-								}
-							},
-							{
-								"source": {
-									"path": "['original_title']"
-								},
-								"sink": {
-									"name": "original_title"
-								}
-							},
-							{
-								"source": {
-									"path": "['overview']"
-								},
-								"sink": {
-									"name": "overview"
-								}
-							},
-							{
-								"source": {
-									"path": "['popularity']"
-								},
-								"sink": {
-									"name": "popularity"
+									"name": "title_type",
+									"type": "String"
 								}
 							},
 							{
@@ -90,15 +62,25 @@
 									"path": "['release_date']"
 								},
 								"sink": {
-									"name": "release_date"
+									"name": "release_date",
+									"type": "String"
 								}
 							},
 							{
 								"source": {
-									"path": "['title']"
+									"path": "['primary_title']"
 								},
 								"sink": {
-									"name": "title"
+									"name": "primary_title"
+								}
+							},
+							{
+								"source": {
+									"path": "['popularity']"
+								},
+								"sink": {
+									"name": "popularity",
+									"type": "Double"
 								}
 							},
 							{
@@ -106,7 +88,8 @@
 									"path": "['vote_average']"
 								},
 								"sink": {
-									"name": "vote_average"
+									"name": "vote_average",
+									"type": "Double"
 								}
 							},
 							{
@@ -114,16 +97,16 @@
 									"path": "['vote_count']"
 								},
 								"sink": {
-									"name": "vote_count"
+									"name": "vote_count",
+									"type": "Int64"
 								}
 							},
 							{
 								"source": {
-									"path": "['genre_ids']"
+									"path": "['genres']"
 								},
 								"sink": {
-									"name": "items",
-									"type": "String"
+									"name": "genres"
 								}
 							}
 						],
@@ -133,8 +116,22 @@
 				},
 				"inputs": [
 					{
-						"referenceName": "DS_REST_TMDB",
-						"type": "DatasetReference"
+						"referenceName": "DS_ADLS_JSON",
+						"type": "DatasetReference",
+						"parameters": {
+							"pContainer": {
+								"value": "@pipeline().parameters.pSrcContainer",
+								"type": "Expression"
+							},
+							"pDirectory": {
+								"value": "@pipeline().parameters.pSrcDirectory",
+								"type": "Expression"
+							},
+							"pFile": {
+								"value": "@pipeline().parameters.pSrcFile",
+								"type": "Expression"
+							}
+						}
 					}
 				],
 				"outputs": [
@@ -166,11 +163,23 @@
 			},
 			"pTgtDirectory": {
 				"type": "string",
-				"defaultValue": "bronze/tmdb"
+				"defaultValue": "silver/tmdb"
 			},
 			"pTgtFile": {
 				"type": "string",
-				"defaultValue": "movies_init.parquet"
+				"defaultValue": "tmdb_movies_delta_20231223_init.parquet"
+			},
+			"pSrcContainer": {
+				"type": "string",
+				"defaultValue": "data"
+			},
+			"pSrcDirectory": {
+				"type": "string",
+				"defaultValue": "bronze/tmdb"
+			},
+			"pSrcFile": {
+				"type": "string",
+				"defaultValue": "tmdb_movies_delta_20231223_20231223.json"
 			}
 		},
 		"annotations": []

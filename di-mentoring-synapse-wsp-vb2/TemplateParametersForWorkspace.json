@@ -29,6 +29,9 @@
 		"LS_MSQL_SQLSRVRSH_SA_properties_typeProperties_connectionString_secretName": {
 			"value": "con-msql-youflixdb-sh"
 		},
+		"LS_REST_TMDB_properties_typeProperties_url": {
+			"value": "https://api.themoviedb.org/3/"
+		},
 		"di-mentoring-synapse-wsp-vb2-WorkspaceDefaultStorage_properties_typeProperties_url": {
 			"value": "https://stdimentoringdatalakevb2.dfs.core.windows.net"
 		}

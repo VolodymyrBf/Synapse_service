@@ -41,6 +41,10 @@
 			"type": "string",
 			"defaultValue": "con-msql-youflixdb-sh"
 		},
+		"LS_REST_TMDB_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://api.themoviedb.org/3/"
+		},
 		"di-mentoring-synapse-wsp-vb2-WorkspaceDefaultStorage_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://stdimentoringdatalakevb2.dfs.core.windows.net"
@@ -460,6 +464,374 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/PL_MSQL_ADLS')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "Copy MSQL",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"sqlReaderQuery": {
+									"value": "@concat('select * from ', pipeline().parameters.pSrcSchema, '.', pipeline().parameters.pSrcTable)",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"parallelCopies": 1,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "user_subscription_device_id",
+											"type": "Int64",
+											"physicalType": "bigint"
+										},
+										"sink": {
+											"name": "user_subscription_device_id",
+											"type": "String",
+											"physicalType": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "user_id",
+											"type": "Int64",
+											"physicalType": "bigint"
+										},
+										"sink": {
+											"name": "user_id",
+											"type": "String",
+											"physicalType": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "subscription_id",
+											"type": "Int64",
+											"physicalType": "bigint"
+										},
+										"sink": {
+											"name": "subscription_id",
+											"type": "String",
+											"physicalType": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "device_id",
+											"type": "Int64",
+											"physicalType": "bigint"
+										},
+										"sink": {
+											"name": "device_id",
+											"type": "String",
+											"physicalType": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "created_timestamp",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										},
+										"sink": {
+											"name": "created_timestamp",
+											"type": "String",
+											"physicalType": "String"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_SQL_YouFlix",
+								"type": "DatasetReference",
+								"parameters": {
+									"pTblName": {
+										"value": "@pipeline().parameters.pSrcTable",
+										"type": "Expression"
+									},
+									"pSchemaName": {
+										"value": "@pipeline().parameters.pSrcSchema",
+										"type": "Expression"
+									}
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_ADLS_CSV",
+								"type": "DatasetReference",
+								"parameters": {
+									"pContainer": {
+										"value": "@pipeline().parameters.pTgtContainer",
+										"type": "Expression"
+									},
+									"pDirectory": {
+										"value": "@pipeline().parameters.pTgtDirectory",
+										"type": "Expression"
+									},
+									"pFileName": {
+										"value": "@pipeline().parameters.pTgtFile",
+										"type": "Expression"
+									}
+								}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"pSrcSchema": {
+						"type": "string",
+						"defaultValue": "youflix"
+					},
+					"pSrcTable": {
+						"type": "string",
+						"defaultValue": "user_subscription_device"
+					},
+					"pTgtDirectory": {
+						"type": "string",
+						"defaultValue": "part_test/2nd_atmpt"
+					},
+					"pTgtContainer": {
+						"type": "string",
+						"defaultValue": "syn-fs"
+					},
+					"pTgtFile": {
+						"type": "string",
+						"defaultValue": "user_subscription_device.csv"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/DS_SQL_YouFlix')]",
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_CSV')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/PL_MSQL_ADLS_PARALLEL')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "Copy MSQL in partitions",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"sqlReaderQuery": {
+									"value": "@concat('select * from ', pipeline().parameters.pSrcSchema, '.', pipeline().parameters.pSrcTable, ' WHERE ?AdfDynamicRangePartitionCondition')",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "DynamicRange",
+								"partitionSettings": {
+									"partitionColumnName": {
+										"value": "@{pipeline().parameters.pSrcPartColumn}",
+										"type": "Expression"
+									},
+									"partitionUpperBound": "",
+									"partitionLowerBound": ""
+								}
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".csv"
+								}
+							},
+							"enableStaging": false,
+							"parallelCopies": 4,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "user_subscription_device_id",
+											"type": "Int64",
+											"physicalType": "bigint"
+										},
+										"sink": {
+											"name": "user_subscription_device_id",
+											"type": "String",
+											"physicalType": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "user_id",
+											"type": "Int64",
+											"physicalType": "bigint"
+										},
+										"sink": {
+											"name": "user_id",
+											"type": "String",
+											"physicalType": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "subscription_id",
+											"type": "Int64",
+											"physicalType": "bigint"
+										},
+										"sink": {
+											"name": "subscription_id",
+											"type": "String",
+											"physicalType": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "device_id",
+											"type": "Int64",
+											"physicalType": "bigint"
+										},
+										"sink": {
+											"name": "device_id",
+											"type": "String",
+											"physicalType": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "created_timestamp",
+											"type": "DateTime",
+											"physicalType": "datetime"
+										},
+										"sink": {
+											"name": "created_timestamp",
+											"type": "String",
+											"physicalType": "String"
+										}
+									}
+								],
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_SQL_YouFlix",
+								"type": "DatasetReference",
+								"parameters": {
+									"pTblName": {
+										"value": "@pipeline().parameters.pSrcTable",
+										"type": "Expression"
+									},
+									"pSchemaName": {
+										"value": "@pipeline().parameters.pSrcSchema",
+										"type": "Expression"
+									}
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_ADLS_CSV_FOLDER",
+								"type": "DatasetReference",
+								"parameters": {
+									"pContainer": {
+										"value": "@pipeline().parameters.pTgtContainer",
+										"type": "Expression"
+									},
+									"pDirectory": {
+										"value": "@pipeline().parameters.pTgtDirectory",
+										"type": "Expression"
+									}
+								}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"pSrcSchema": {
+						"type": "string",
+						"defaultValue": "youflix"
+					},
+					"pSrcPartColumn": {
+						"type": "string",
+						"defaultValue": "user_subscription_device_id"
+					},
+					"pSrcTable": {
+						"type": "string",
+						"defaultValue": "user_subscription_device"
+					},
+					"pTgtDirectory": {
+						"type": "string",
+						"defaultValue": "part_test/2nd_atmpt"
+					},
+					"pTgtContainer": {
+						"type": "string",
+						"defaultValue": "syn-fs"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/DS_SQL_YouFlix')]",
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_CSV_FOLDER')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/PL_MSQL_ADLS_delta_v2')]",
 			"type": "Microsoft.Synapse/workspaces/pipelines",
 			"apiVersion": "2019-06-01-preview",
@@ -862,6 +1234,202 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/PL_TMDB_to_ADLS')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "Copy_TMDB_data",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "JsonSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": false,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "JsonReadSettings"
+								}
+							},
+							"sink": {
+								"type": "ParquetSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "ParquetWriteSettings"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"path": "['title_id']"
+										},
+										"sink": {
+											"name": "title_id",
+											"type": "Int64"
+										}
+									},
+									{
+										"source": {
+											"path": "['title_type']"
+										},
+										"sink": {
+											"name": "title_type",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "['release_date']"
+										},
+										"sink": {
+											"name": "release_date",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"path": "['primary_title']"
+										},
+										"sink": {
+											"name": "primary_title"
+										}
+									},
+									{
+										"source": {
+											"path": "['popularity']"
+										},
+										"sink": {
+											"name": "popularity",
+											"type": "Double"
+										}
+									},
+									{
+										"source": {
+											"path": "['vote_average']"
+										},
+										"sink": {
+											"name": "vote_average",
+											"type": "Double"
+										}
+									},
+									{
+										"source": {
+											"path": "['vote_count']"
+										},
+										"sink": {
+											"name": "vote_count",
+											"type": "Int64"
+										}
+									},
+									{
+										"source": {
+											"path": "['genres']"
+										},
+										"sink": {
+											"name": "genres"
+										}
+									}
+								],
+								"collectionReference": "$['results']",
+								"mapComplexValuesToString": true
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_ADLS_JSON",
+								"type": "DatasetReference",
+								"parameters": {
+									"pContainer": {
+										"value": "@pipeline().parameters.pSrcContainer",
+										"type": "Expression"
+									},
+									"pDirectory": {
+										"value": "@pipeline().parameters.pSrcDirectory",
+										"type": "Expression"
+									},
+									"pFile": {
+										"value": "@pipeline().parameters.pSrcFile",
+										"type": "Expression"
+									}
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_ADLS_PARQUET_FILE",
+								"type": "DatasetReference",
+								"parameters": {
+									"pContainer": {
+										"value": "@pipeline().parameters.pTgtContainer",
+										"type": "Expression"
+									},
+									"pDirectory": {
+										"value": "@pipeline().parameters.pTgtDirectory",
+										"type": "Expression"
+									},
+									"pFile": {
+										"value": "@pipeline().parameters.pTgtFile",
+										"type": "Expression"
+									}
+								}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"pTgtContainer": {
+						"type": "string",
+						"defaultValue": "data"
+					},
+					"pTgtDirectory": {
+						"type": "string",
+						"defaultValue": "silver/tmdb"
+					},
+					"pTgtFile": {
+						"type": "string",
+						"defaultValue": "tmdb_movies_delta_20231223_init.parquet"
+					},
+					"pSrcContainer": {
+						"type": "string",
+						"defaultValue": "data"
+					},
+					"pSrcDirectory": {
+						"type": "string",
+						"defaultValue": "bronze/tmdb"
+					},
+					"pSrcFile": {
+						"type": "string",
+						"defaultValue": "tmdb_movies_delta_20231223_20231223.json"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_JSON')]",
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_PARQUET_FILE')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/PL_TRAN_ASYN_GenerateTop10ShowsDataset')]",
 			"type": "Microsoft.Synapse/workspaces/pipelines",
 			"apiVersion": "2019-06-01-preview",
@@ -1195,192 +1763,6 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/PL_MSQL_ADLS_PARALLEL')]",
-			"type": "Microsoft.Synapse/workspaces/pipelines",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"activities": [
-					{
-						"name": "Copy MSQL in partitions",
-						"type": "Copy",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"source": {
-								"type": "SqlServerSource",
-								"sqlReaderQuery": {
-									"value": "@concat('select * from ', pipeline().parameters.pSrcSchema, '.', pipeline().parameters.pSrcTable, ' WHERE ?AdfDynamicRangePartitionCondition')",
-									"type": "Expression"
-								},
-								"queryTimeout": "02:00:00",
-								"partitionOption": "DynamicRange",
-								"partitionSettings": {
-									"partitionColumnName": {
-										"value": "@{pipeline().parameters.pSrcPartColumn}",
-										"type": "Expression"
-									},
-									"partitionUpperBound": "",
-									"partitionLowerBound": ""
-								}
-							},
-							"sink": {
-								"type": "DelimitedTextSink",
-								"storeSettings": {
-									"type": "AzureBlobFSWriteSettings"
-								},
-								"formatSettings": {
-									"type": "DelimitedTextWriteSettings",
-									"quoteAllText": true,
-									"fileExtension": ".csv"
-								}
-							},
-							"enableStaging": false,
-							"parallelCopies": 4,
-							"translator": {
-								"type": "TabularTranslator",
-								"mappings": [
-									{
-										"source": {
-											"name": "user_subscription_device_id",
-											"type": "Int64",
-											"physicalType": "bigint"
-										},
-										"sink": {
-											"name": "user_subscription_device_id",
-											"type": "String",
-											"physicalType": "String"
-										}
-									},
-									{
-										"source": {
-											"name": "user_id",
-											"type": "Int64",
-											"physicalType": "bigint"
-										},
-										"sink": {
-											"name": "user_id",
-											"type": "String",
-											"physicalType": "String"
-										}
-									},
-									{
-										"source": {
-											"name": "subscription_id",
-											"type": "Int64",
-											"physicalType": "bigint"
-										},
-										"sink": {
-											"name": "subscription_id",
-											"type": "String",
-											"physicalType": "String"
-										}
-									},
-									{
-										"source": {
-											"name": "device_id",
-											"type": "Int64",
-											"physicalType": "bigint"
-										},
-										"sink": {
-											"name": "device_id",
-											"type": "String",
-											"physicalType": "String"
-										}
-									},
-									{
-										"source": {
-											"name": "created_timestamp",
-											"type": "DateTime",
-											"physicalType": "datetime"
-										},
-										"sink": {
-											"name": "created_timestamp",
-											"type": "String",
-											"physicalType": "String"
-										}
-									}
-								],
-								"typeConversion": true,
-								"typeConversionSettings": {
-									"allowDataTruncation": true,
-									"treatBooleanAsNumber": false
-								}
-							}
-						},
-						"inputs": [
-							{
-								"referenceName": "DS_SQL_YouFlix",
-								"type": "DatasetReference",
-								"parameters": {
-									"pTblName": {
-										"value": "@pipeline().parameters.pSrcTable",
-										"type": "Expression"
-									},
-									"pSchemaName": {
-										"value": "@pipeline().parameters.pSrcSchema",
-										"type": "Expression"
-									}
-								}
-							}
-						],
-						"outputs": [
-							{
-								"referenceName": "DS_ADLS_CSV_FOLDER",
-								"type": "DatasetReference",
-								"parameters": {
-									"pContainer": {
-										"value": "@pipeline().parameters.pTgtContainer",
-										"type": "Expression"
-									},
-									"pDirectory": {
-										"value": "@pipeline().parameters.pTgtDirectory",
-										"type": "Expression"
-									}
-								}
-							}
-						]
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {}
-				},
-				"parameters": {
-					"pSrcSchema": {
-						"type": "string",
-						"defaultValue": "youflix"
-					},
-					"pSrcPartColumn": {
-						"type": "string",
-						"defaultValue": "user_subscription_device_id"
-					},
-					"pSrcTable": {
-						"type": "string",
-						"defaultValue": "user_subscription_device"
-					},
-					"pTgtDirectory": {
-						"type": "string",
-						"defaultValue": "part_test/2nd_atmpt"
-					},
-					"pTgtContainer": {
-						"type": "string",
-						"defaultValue": "syn-fs"
-					}
-				},
-				"annotations": []
-			},
-			"dependsOn": [
-				"[concat(variables('workspaceId'), '/datasets/DS_SQL_YouFlix')]",
-				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_CSV_FOLDER')]"
-			]
-		},
-		{
 			"name": "[concat(parameters('workspaceName'), '/DS_ABLB_TSV_GZ')]",
 			"type": "Microsoft.Synapse/workspaces/datasets",
 			"apiVersion": "2019-06-01-preview",
@@ -1658,6 +2040,26 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/DS_REST_TMDB')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_REST_TMDB",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "RestResource",
+				"typeProperties": {
+					"relativeUrl": "discover/movie?language=en-US&page={id}"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/LS_REST_TMDB')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/DS_SQL_YouFlix')]",
 			"type": "Microsoft.Synapse/workspaces/datasets",
 			"apiVersion": "2019-06-01-preview",
@@ -1847,6 +2249,37 @@
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/integrationRuntimes/ir-di-mentoring-vb2')]",
 				"[concat(variables('workspaceId'), '/linkedServices/LS_KV_DI_MENTORING_VB2')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/LS_REST_TMDB')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "RestService",
+				"typeProperties": {
+					"url": "[parameters('LS_REST_TMDB_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": false,
+					"authenticationType": "Anonymous",
+					"authHeaders": {
+						"Authorization": {
+							"type": "SecureString",
+							"value": "**********"
+						},
+						"accept": {
+							"type": "SecureString",
+							"value": "**********"
+						}
+					}
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
 			]
 		},
 		{
@@ -2450,188 +2883,6 @@
 				]
 			},
 			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('workspaceName'), '/PL_MSQL_ADLS')]",
-			"type": "Microsoft.Synapse/workspaces/pipelines",
-			"apiVersion": "2019-06-01-preview",
-			"properties": {
-				"activities": [
-					{
-						"name": "Copy MSQL",
-						"type": "Copy",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"source": {
-								"type": "SqlServerSource",
-								"sqlReaderQuery": {
-									"value": "@concat('select * from ', pipeline().parameters.pSrcSchema, '.', pipeline().parameters.pSrcTable)",
-									"type": "Expression"
-								},
-								"queryTimeout": "02:00:00",
-								"partitionOption": "None"
-							},
-							"sink": {
-								"type": "DelimitedTextSink",
-								"storeSettings": {
-									"type": "AzureBlobFSWriteSettings"
-								},
-								"formatSettings": {
-									"type": "DelimitedTextWriteSettings",
-									"quoteAllText": true,
-									"fileExtension": ".txt"
-								}
-							},
-							"enableStaging": false,
-							"parallelCopies": 1,
-							"translator": {
-								"type": "TabularTranslator",
-								"mappings": [
-									{
-										"source": {
-											"name": "user_subscription_device_id",
-											"type": "Int64",
-											"physicalType": "bigint"
-										},
-										"sink": {
-											"name": "user_subscription_device_id",
-											"type": "String",
-											"physicalType": "String"
-										}
-									},
-									{
-										"source": {
-											"name": "user_id",
-											"type": "Int64",
-											"physicalType": "bigint"
-										},
-										"sink": {
-											"name": "user_id",
-											"type": "String",
-											"physicalType": "String"
-										}
-									},
-									{
-										"source": {
-											"name": "subscription_id",
-											"type": "Int64",
-											"physicalType": "bigint"
-										},
-										"sink": {
-											"name": "subscription_id",
-											"type": "String",
-											"physicalType": "String"
-										}
-									},
-									{
-										"source": {
-											"name": "device_id",
-											"type": "Int64",
-											"physicalType": "bigint"
-										},
-										"sink": {
-											"name": "device_id",
-											"type": "String",
-											"physicalType": "String"
-										}
-									},
-									{
-										"source": {
-											"name": "created_timestamp",
-											"type": "DateTime",
-											"physicalType": "datetime"
-										},
-										"sink": {
-											"name": "created_timestamp",
-											"type": "String",
-											"physicalType": "String"
-										}
-									}
-								],
-								"typeConversion": true,
-								"typeConversionSettings": {
-									"allowDataTruncation": true,
-									"treatBooleanAsNumber": false
-								}
-							}
-						},
-						"inputs": [
-							{
-								"referenceName": "DS_SQL_YouFlix",
-								"type": "DatasetReference",
-								"parameters": {
-									"pTblName": {
-										"value": "@pipeline().parameters.pSrcTable",
-										"type": "Expression"
-									},
-									"pSchemaName": {
-										"value": "@pipeline().parameters.pSrcSchema",
-										"type": "Expression"
-									}
-								}
-							}
-						],
-						"outputs": [
-							{
-								"referenceName": "DS_ADLS_CSV",
-								"type": "DatasetReference",
-								"parameters": {
-									"pContainer": {
-										"value": "@pipeline().parameters.pTgtContainer",
-										"type": "Expression"
-									},
-									"pDirectory": {
-										"value": "@pipeline().parameters.pTgtDirectory",
-										"type": "Expression"
-									},
-									"pFileName": {
-										"value": "@pipeline().parameters.pTgtFile",
-										"type": "Expression"
-									}
-								}
-							}
-						]
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {}
-				},
-				"parameters": {
-					"pSrcSchema": {
-						"type": "string",
-						"defaultValue": "youflix"
-					},
-					"pSrcTable": {
-						"type": "string",
-						"defaultValue": "user_subscription_device"
-					},
-					"pTgtDirectory": {
-						"type": "string",
-						"defaultValue": "part_test/2nd_atmpt"
-					},
-					"pTgtContainer": {
-						"type": "string",
-						"defaultValue": "syn-fs"
-					},
-					"pTgtFile": {
-						"type": "string",
-						"defaultValue": "user_subscription_device.csv"
-					}
-				},
-				"annotations": []
-			},
-			"dependsOn": [
-				"[concat(variables('workspaceId'), '/datasets/DS_SQL_YouFlix')]",
-				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_CSV')]"
-			]
 		}
 	]
 }

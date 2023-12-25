@@ -1,5 +1,5 @@
 {
-	"name": "PL_TMDB_to_ADLS",
+	"name": "PL_TMDB_to_ADLS_param",
 	"properties": {
 		"activities": [
 			{
@@ -37,81 +37,8 @@
 					},
 					"enableStaging": false,
 					"translator": {
-						"type": "TabularTranslator",
-						"mappings": [
-							{
-								"source": {
-									"path": "['title_id']"
-								},
-								"sink": {
-									"name": "title_id",
-									"type": "Int64"
-								}
-							},
-							{
-								"source": {
-									"path": "['title_type']"
-								},
-								"sink": {
-									"name": "title_type",
-									"type": "String"
-								}
-							},
-							{
-								"source": {
-									"path": "['release_date']"
-								},
-								"sink": {
-									"name": "release_date",
-									"type": "String"
-								}
-							},
-							{
-								"source": {
-									"path": "['primary_title']"
-								},
-								"sink": {
-									"name": "primary_title"
-								}
-							},
-							{
-								"source": {
-									"path": "['popularity']"
-								},
-								"sink": {
-									"name": "popularity",
-									"type": "Double"
-								}
-							},
-							{
-								"source": {
-									"path": "['vote_average']"
-								},
-								"sink": {
-									"name": "vote_average",
-									"type": "Double"
-								}
-							},
-							{
-								"source": {
-									"path": "['vote_count']"
-								},
-								"sink": {
-									"name": "vote_count",
-									"type": "Int64"
-								}
-							},
-							{
-								"source": {
-									"path": "['genres']"
-								},
-								"sink": {
-									"name": "genres"
-								}
-							}
-						],
-						"collectionReference": "$['results']",
-						"mapComplexValuesToString": true
+						"value": "@pipeline().parameters.pMapping",
+						"type": "Expression"
 					}
 				},
 				"inputs": [
@@ -148,7 +75,7 @@
 								"type": "Expression"
 							},
 							"pFile": {
-								"value": "@pipeline().parameters.pTgtFile",
+								"value": "@replace(pipeline().parameters.pSrcFile, '.json', 'parquet')",
 								"type": "Expression"
 							}
 						}
@@ -165,10 +92,6 @@
 				"type": "string",
 				"defaultValue": "silver/tmdb"
 			},
-			"pTgtFile": {
-				"type": "string",
-				"defaultValue": "tmdb_movies_delta_20231223_init.parquet"
-			},
 			"pSrcContainer": {
 				"type": "string",
 				"defaultValue": "data"
@@ -180,6 +103,79 @@
 			"pSrcFile": {
 				"type": "string",
 				"defaultValue": "tmdb_movies_delta_20231223_20231223.json"
+			},
+			"pMapping": {
+				"type": "object",
+				"defaultValue": {
+					"type": "TabularTranslator",
+					"mappings": [
+						{
+							"source": {
+								"path": "['id']"
+							},
+							"sink": {
+								"name": "title_id",
+								"type": "Int64"
+							}
+						},
+						{
+							"source": {
+								"path": "['original_title']"
+							},
+							"sink": {
+								"name": "primary_title",
+								"type": "String"
+							}
+						},
+						{
+							"source": {
+								"path": "['popularity']"
+							},
+							"sink": {
+								"name": "popularity",
+								"type": "Double"
+							}
+						},
+						{
+							"source": {
+								"path": "['release_date']"
+							},
+							"sink": {
+								"name": "release_date",
+								"type": "String"
+							}
+						},
+						{
+							"source": {
+								"path": "['vote_average']"
+							},
+							"sink": {
+								"name": "vote_average",
+								"type": "Double"
+							}
+						},
+						{
+							"source": {
+								"path": "['vote_count']"
+							},
+							"sink": {
+								"name": "vote_count",
+								"type": "Int64"
+							}
+						},
+						{
+							"source": {
+								"path": "['genres']"
+							},
+							"sink": {
+								"name": "genres",
+								"type": "String"
+							}
+						}
+					],
+					"collectionReference": "$['results']",
+					"mapComplexValuesToString": true
+				}
 			}
 		},
 		"annotations": []

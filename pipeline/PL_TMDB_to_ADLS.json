@@ -1,0 +1,174 @@
+{
+	"name": "PL_TMDB_to_ADLS",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy_TMDB_data",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": false,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"value": "@pipeline().parameters.properties.mapping",
+						"type": "Expression"
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_ADLS_JSON",
+						"type": "DatasetReference",
+						"parameters": {
+							"pContainer": {
+								"value": "@pipeline().parameters.properties.source.pSrcContainer",
+								"type": "Expression"
+							},
+							"pDirectory": {
+								"value": "@pipeline().parameters.properties.source.pSrcDirectory",
+								"type": "Expression"
+							},
+							"pFile": {
+								"value": "@pipeline().parameters.properties.source.pSrcFile",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_ADLS_PARQUET_FILE",
+						"type": "DatasetReference",
+						"parameters": {
+							"pContainer": {
+								"value": "@pipeline().parameters.properties.target.pTgtContainer",
+								"type": "Expression"
+							},
+							"pDirectory": {
+								"value": "@pipeline().parameters.properties.target.pTgtDirectory",
+								"type": "Expression"
+							},
+							"pFile": {
+								"value": "@replace(pipeline().parameters.properties.source.pSrcFile, '.json', '.parquet')",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"properties": {
+				"type": "object",
+				"defaultValue": {
+					"source": {
+						"pSrcContainer": "data",
+						"pSrcDirectory": "bronze/tmdb",
+						"pSrcFile": "tmdb_movies_delta_20231225_20231225_20231225104341.json"
+					},
+					"target": {
+						"pTgtContainer": "data",
+						"pTgtDirectory": "silver/tmdb"
+					},
+					"mapping": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"path": "['id']"
+								},
+								"sink": {
+									"name": "title_id",
+									"type": "Int64"
+								}
+							},
+							{
+								"source": {
+									"path": "['original_title']"
+								},
+								"sink": {
+									"name": "primary_title",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"path": "['popularity']"
+								},
+								"sink": {
+									"name": "popularity",
+									"type": "Double"
+								}
+							},
+							{
+								"source": {
+									"path": "['release_date']"
+								},
+								"sink": {
+									"name": "release_date",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"path": "['vote_average']"
+								},
+								"sink": {
+									"name": "vote_average",
+									"type": "Double"
+								}
+							},
+							{
+								"source": {
+									"path": "['vote_count']"
+								},
+								"sink": {
+									"name": "vote_count",
+									"type": "Int64"
+								}
+							},
+							{
+								"source": {
+									"path": "['genres']"
+								},
+								"sink": {
+									"name": "genres",
+									"type": "String"
+								}
+							}
+						],
+						"collectionReference": "$['results']",
+						"mapComplexValuesToString": true
+					}
+				}
+			}
+		},
+		"annotations": []
+	}
+}

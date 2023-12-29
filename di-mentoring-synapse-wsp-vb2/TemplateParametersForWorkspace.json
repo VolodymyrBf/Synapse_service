@@ -5,9 +5,6 @@
 		"workspaceName": {
 			"value": "di-mentoring-synapse-wsp-vb2"
 		},
-		"LS_ADLS_STDIMENTORINGDATALAKEVB2_SMI_accountKey": {
-			"value": ""
-		},
 		"LS_ASYN_WSP_VB2_connectionString": {
 			"value": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=di-mentoring-synapse-wsp-vb2-ondemand.sql.azuresynapse.net;Initial Catalog=LDW"
 		},
